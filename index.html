@@ -32,6 +32,7 @@ html, body { margin: 0; }
 body { background: var(--bg); color: var(--ink); font: 16px/1.4 var(--sans);
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
 main { max-width: 640px; margin: 0 auto; padding: 12px 16px 28px; display: flex; flex-direction: column; gap: 12px; }
+@media (min-width: 1100px) { main { max-width: 1040px; } }       /* a computer screen: a bigger camera picture and plate photo */
 h1 { margin: 0; font-size: 17px; font-weight: 650; }
 .brand { display: flex; align-items: center; gap: 12px; }
 .brand img { height: 46px; width: auto; display: block; background: #fff; border-radius: 8px; padding: 4px 6px; }   /* the logo is dark blue, so it sits on white */
@@ -53,6 +54,22 @@ label.check input { width: 20px; height: 20px; }
 #strip { display: grid; grid-template-columns: repeat(37, 1fr); grid-auto-rows: 9px; gap: 1px 0; border: 1px solid var(--line); border-radius: 3px; overflow: hidden; }
 #strip i { display: block; }
 .msg { font-size: 14px; color: var(--muted); margin: 0; }
+.adjust { display: grid; grid-template-columns: auto 1fr 3.2em; gap: 6px 12px; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; }
+.adjust label { font-size: 14px; }
+.adjust output { font: 600 14px var(--mono); text-align: right; font-variant-numeric: tabular-nums; }
+.adjust input[type=range] { width: 100%; accent-color: var(--accent); min-height: 30px; }
+.adjust .foot { grid-column: 1 / -1; display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.adjust .wide { grid-column: 1 / -1; }
+.adjust h3, h2.sub { margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 650; }
+.adjust h3 { grid-column: 1 / -1; }
+h2.sub { margin-top: 10px; }
+.rackbox { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; align-items: center; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid #3fd0e0; border-radius: 10px; padding: 10px 14px; }
+.rackbox input, .find input { font: 600 18px var(--mono); color: var(--ink); background: #0c131a; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; min-width: 0; width: 100%; }
+.rackbox .msg { grid-column: 1 / -1; }
+.find input { font: 15px var(--mono); }
+#inv-table td:nth-child(1) { font-family: var(--mono); }
+#inv-table button { min-height: 34px; padding: 4px 10px; font-size: 13px; }
+#inv-table tr.detail td { white-space: normal; font: 12px/1.6 var(--mono); color: var(--muted); }
 .logwrap { max-height: 40vh; overflow: auto; border: 1px solid var(--line); border-radius: 10px; -webkit-overflow-scrolling: touch; }
 table { border-collapse: collapse; width: 100%; font-size: 14px; }
 th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
@@ -86,15 +103,36 @@ td.none { color: var(--muted); }
     <button id="mode-live" type="button" aria-pressed="true">One label, live</button>
     <button id="mode-plate" type="button" aria-pressed="false">Plate photo (96)</button>
   </div>
-  <div id="live" style="display:contents">
   <div class="row">
-    <div class="grow"><select id="camsel" aria-label="Camera"><option value="">Back camera</option></select></div>
+    <div class="grow"><select id="camsel" aria-label="Camera"><option value="">Default camera</option></select></div>
     <button id="btn-cam" type="button">Start camera</button>
   </div>
   <div id="camwrap">
-    <p id="cam-hint">Tap Start camera and point the phone at a label. It reads at any rotation and logs each label by itself.</p>
+    <p id="cam-hint">Press Start camera. Works with a phone camera or a computer webcam. Hold a label in view; it reads at any rotation and logs each label by itself.</p>
     <canvas id="cam" hidden></canvas>
   </div>
+  <div class="adjust" role="group" aria-label="Picture adjustments">
+    <label for="bright">Brightness</label><input id="bright" type="range" min="-100" max="100" step="5" value="0"><output id="bright-val" for="bright">0</output>
+    <label for="contrast">Contrast</label><input id="contrast" type="range" min="-100" max="100" step="5" value="0"><output id="contrast-val" for="contrast">0</output>
+    <div class="foot">
+      <span class="msg">Applied to everything the reader looks at: the camera picture and plate photos.</span>
+      <button id="btn-adjust-reset" class="ghost" type="button">Reset</button>
+    </div>
+  </div>
+  <div class="adjust" id="camctl" role="group" aria-label="Camera settings" style="display:none">
+    <h3>Camera</h3>
+    <label for="focus" class="fo">Focus</label><input id="focus" class="fo" type="range"><output id="focus-val" class="fo" for="focus"></output>
+    <label for="expo" class="ex">Exposure</label><input id="expo" class="ex" type="range" min="0" max="100" step="1"><output id="expo-val" class="ex" for="expo"></output>
+    <div class="foot">
+      <label class="check fo" for="focus-auto"><input id="focus-auto" type="checkbox"> Auto focus</label>
+      <label class="check ex" for="expo-auto"><input id="expo-auto" type="checkbox"> Auto exposure</label>
+      <label class="check" for="use-photo" id="use-photo-row" style="display:none"><input id="use-photo" type="checkbox"> <span id="use-photo-text">Capture at full photo resolution</span></label>
+      <button id="btn-tune" type="button">Tune focus and exposure</button>
+    </div>
+    <p id="tune-msg" class="msg wide" aria-live="polite"></p>
+  </div>
+  <p id="camctl-none" class="msg" style="display:none"></p>
+  <div id="live" style="display:contents">
   <div>
     <div id="readout" aria-live="polite">&nbsp;</div>
     <span id="status" class="pill idle">Camera off</span>
@@ -124,17 +162,27 @@ td.none { color: var(--muted); }
   </div>
 
   <div id="plate" hidden style="display:none">
-    <p class="msg">Photograph the whole plate or label sheet square-on, filling the frame, in even light. Every label is read and placed in its well, A1 to H12.</p>
+    <p class="msg">Photograph the whole plate or label sheet square-on, filling the frame, in even light. Every label is read and placed in its well, A1 to H12. On a computer, start the camera above, fit the rack inside the box, and press Capture plate (or the space bar).</p>
+    <div class="row">
+      <button id="btn-capture" class="grow" type="button" style="display:none">Capture plate from camera</button>
+    </div>
     <div class="row">
       <label class="filebtn grow">Take plate photo<input id="shot" type="file" accept="image/*" capture="environment"></label>
       <label class="filebtn ghost grow">Choose a photo<input id="pick" type="file" accept="image/*"></label>
     </div>
+    <label class="check" for="bottom-view"><input id="bottom-view" type="checkbox" checked> Photo is of the rack's underside (A1 at top right)</label>
     <label class="check" for="retries">Retry unread labels up to brightness ± (0 to 9)
       <input id="retries" type="number" min="0" max="9" step="1" value="5" inputmode="numeric" style="width:64px;height:40px;font:inherit;text-align:center;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink)">
     </label>
+    <div class="row"><button id="btn-reread" class="ghost grow" type="button" style="display:none">Read this photo again with the new brightness and contrast</button></div>
     <p id="plate-status" class="msg" aria-live="polite"></p>
     <canvas id="photo" hidden></canvas>
     <div id="plate-results" hidden style="display:none">
+      <div class="rackbox">
+        <label for="rack-id">Rack ID</label>
+        <input id="rack-id" type="text" autocomplete="off" spellcheck="false" placeholder="Type the rack ID">
+        <p id="rack-src" class="msg"></p>
+      </div>
       <div id="summary"></div>
       <p id="plate-note" class="msg"></p>
       <div id="map" aria-label="Plate map"></div>
@@ -156,16 +204,59 @@ td.none { color: var(--muted); }
       <div class="row">
         <button id="btn-plate-copy" class="ghost" type="button">Copy all</button>
         <button id="btn-plate-csv" class="ghost" type="button">Save plate (CSV)</button>
+        <button id="btn-save-rack" type="button">Save rack to inventory</button>
       </div>
+      <p id="save-msg" class="msg" aria-live="polite"></p>
     </div>
+    <h2 class="sub">Racks saved on this device</h2>
+    <div class="find"><input id="find-tube" type="search" autocomplete="off" spellcheck="false" placeholder="Find a tube: type or paste its barcode" aria-label="Find a tube"></div>
+    <p id="find-result" class="msg" aria-live="polite"></p>
+    <p id="inv-empty" class="msg">No racks saved yet. Read a rack, check its ID, then press Save rack to inventory.</p>
+    <div class="logwrap" id="inv-wrap" style="max-height:45vh">
+      <table id="inv-table">
+        <thead><tr><th>Rack ID</th><th>Scanned</th><th>Tubes</th><th></th></tr></thead>
+        <tbody id="inv-rows"></tbody>
+      </table>
+    </div>
+    <div class="row" id="inv-actions">
+      <button id="btn-inv-csv" class="ghost" type="button">Export all racks (CSV)</button>
+      <button id="btn-inv-copy" class="ghost" type="button">Copy all racks</button>
+    </div>
+    <p class="msg">Saved on this device, in this browser only. Export to keep a copy or move it to another computer.</p>
   </div>
   <p id="offline-note" class="msg" style="text-align:center"></p>
 </main>
 <script id="core">
 /* ---------- colorcode core: no DOM in this block (shared with tests) ---------- */
 const PALETTE = "KBGWO";      // black, blue, green, white, reddish orange
-const N_DATA = 20, N_CHECK = 13, COPY_LEN = 37, RING_LEN = 74, MAX_NUM = 1e12;
-const CHECK_MOD = 50331599, CHECK_G = 5, CHECK_A = 31337421;
+/* An ID is 1 to 12 characters from 0-9 and A-Z. Each of its 12 places is a number 0-36 (0 marks an
+   unused place at the end), the places make one base-37 number, and 37^12 < 4^32, so 32 data
+   segments hold any ID. The numbers pass 2^53, so they are BigInts. */
+const ID_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ", ID_LEN = 12;
+const N_DATA = 32, N_CHECK = 13, COPY_LEN = 49, RING_LEN = 98;
+const CHECK_MOD = 50331599, CHECK_G = 5, CHECK_A = 31337421;   // every pair of misread segments is caught (tested)
+function cleanId(text) {
+  const t = String(text == null ? "" : text).trim().toUpperCase();
+  return /^[0-9A-Z]{1,12}$/.test(t) ? t : null;
+}
+function idToValue(id) {
+  let v = 0n;
+  for (let i = 0; i < ID_LEN; i++) v = v * 37n + BigInt(i < id.length ? ID_CHARS.indexOf(id[i]) + 1 : 0);
+  return v;
+}
+function valueToId(v) {
+  const places = [];
+  for (let i = 0; i < ID_LEN; i++) { places.push(Number(v % 37n)); v /= 37n; }
+  if (v !== 0n) return null;
+  places.reverse();
+  let id = "", ended = false;
+  for (const k of places) {
+    if (k === 0) { ended = true; continue; }
+    if (ended) return null;                 // an unused place in the middle: not a valid ID
+    id += ID_CHARS[k - 1];
+  }
+  return id || null;
+}
 
 function choices(prev, exclude) {
   const out = [];
@@ -177,10 +268,12 @@ function checksum(data) {
   for (let i = 0; i < data.length; i++) { s = (s + w * PALETTE.indexOf(data[i])) % CHECK_MOD; w = (w * CHECK_G) % CHECK_MOD; }
   return s;
 }
-function encodeCopy(n) {
+function encodeCopy(idText) {
+  const id = cleanId(idText);
+  if (!id) throw new Error("An ID is 1 to 12 characters, 0-9 and A-Z: " + idText);
+  let v = idToValue(id);
   const digits = [];
-  let v = n;
-  for (let i = 0; i < N_DATA; i++) { digits.push(v % 4); v = Math.floor(v / 4); }
+  for (let i = 0; i < N_DATA; i++) { digits.push(Number(v % 4n)); v /= 4n; }
   digits.reverse();
   const seq = ["K", "K"];
   for (const d of digits) seq.push(choices(seq[seq.length - 1])[d]);
@@ -192,20 +285,21 @@ function encodeCopy(n) {
   seq.push(choices(seq[seq.length - 1], "W")[c % 3]);     // must also differ from the white stop marker
   return seq.join("") + "WW";
 }
-function encodeRing(n) { const c = encodeCopy(n); return c + c; }
+function encodeRing(id) { const c = encodeCopy(id); return c + c; }
 
+/* The ID in one copy that starts at its start marker, or null. */
 function decodeCopy(copy) {
   if (copy.length !== COPY_LEN || copy[0] !== "K" || copy[1] !== "K" ||
       copy[COPY_LEN - 2] !== "W" || copy[COPY_LEN - 1] !== "W") return null;
-  let n = 0, prev = "K";
+  let v = 0n, prev = "K";
   for (let i = 2; i < 2 + N_DATA; i++) {
     const idx = choices(prev).indexOf(copy[i]);
     if (idx < 0) return null;
-    n = n * 4 + idx;
+    v = v * 4n + BigInt(idx);
     prev = copy[i];
   }
-  if (n >= MAX_NUM) return null;
-  return encodeCopy(n) === copy ? n : null;
+  const id = valueToId(v);
+  return id && encodeCopy(id) === copy ? id : null;
 }
 function cleanSeq(text) {
   let out = "";
@@ -230,7 +324,7 @@ function decodeRing(ring) {
       if (na !== null && nb !== null && na !== nb) return { error: "The two copies decode to different numbers.", conflict: true };
       const n = na !== null ? na : nb, good = (na !== null) + (nb !== null);
       if (!best.has(n) || best.get(n).goodCopies < good)
-        best.set(n, { number: n, digits: String(n).padStart(12, "0"), goodCopies: good, rotation: rot, reversed });
+        best.set(n, { number: n, digits: n, goodCopies: good, rotation: rot, reversed });
     }
   }
   if (!best.size) return { error: "No valid code found." };
@@ -287,26 +381,36 @@ const DM = (() => {
     if (bits[nr - 1][nc - 1] < 0) { bits[nr - 1][nc - 1] = 1; bits[nr - 2][nc - 2] = 1; }
     return bits;
   }
-  /* digits: 12-character string -> 14x14 array of 0/1 (1 = dark) */
-  function encode(digits) {
+  /* text (ASCII: here 0-9 and A-Z) -> square array of 0/1 (1 = dark). Digit pairs pack into one
+     codeword. The smallest square symbol that fits is used: 6 digits make 10 x 10, 12 digits 14 x 14,
+     12 letters 16 x 16. */
+  const SIZES = [[10, 3, 5], [12, 5, 7], [14, 8, 10], [16, 12, 12], [18, 18, 14], [20, 22, 18], [22, 30, 20], [24, 36, 24], [26, 44, 28]];
+  function encode(text) {
     const cw = [];
-    for (let i = 0; i < 12; i += 2) cw.push(130 + parseInt(digits.substr(i, 2), 10));
-    if (cw.length < 8) cw.push(129);
-    while (cw.length < 8) {
+    for (let i = 0; i < text.length; i++) {
+      const a = text.charCodeAt(i), b = text.charCodeAt(i + 1);
+      if (a >= 48 && a <= 57 && b >= 48 && b <= 57) { cw.push(130 + (a - 48) * 10 + (b - 48)); i++; }
+      else cw.push(a + 1);
+    }
+    const size = SIZES.find(z => z[1] >= cw.length);
+    if (!size) throw new Error("text too long for one Data Matrix region");
+    const [N, nData, nEcc] = size;
+    if (cw.length < nData) cw.push(129);
+    while (cw.length < nData) {
       let p = 129 + ((149 * (cw.length + 1)) % 253) + 1;
       cw.push(p > 254 ? p - 254 : p);
     }
-    const all = cw.concat(rs(cw, 10));
-    const map = place(12, 12, all);
-    const m = Array.from({ length: 14 }, () => new Array(14).fill(0));
-    for (let i = 0; i < 14; i++) {
-      m[i][0] = 1;                 // solid left
-      m[13][i] = 1;                // solid bottom
-      m[0][i] = i % 2 === 0 ? 1 : 0;        // clock track, top
-      m[i][13] = i % 2 === 1 ? 1 : 0;       // clock track, right
+    const all = cw.concat(rs(cw, nEcc));
+    const map = place(N - 2, N - 2, all);
+    const m = Array.from({ length: N }, () => new Array(N).fill(0));
+    for (let i = 0; i < N; i++) {
+      m[i][0] = 1;                    // solid left
+      m[N - 1][i] = 1;                // solid bottom
+      m[0][i] = i % 2 === 0 ? 1 : 0;           // clock track, top
+      m[i][N - 1] = i % 2 === 1 ? 1 : 0;       // clock track, right
     }
-    m[13][13] = 1;
-    for (let r = 0; r < 12; r++) for (let c = 0; c < 12; c++) m[r + 1][c + 1] = map[r][c] ? 1 : 0;
+    m[N - 1][N - 1] = 1;
+    for (let r = 0; r < N - 2; r++) for (let c = 0; c < N - 2; c++) m[r + 1][c + 1] = map[r][c] ? 1 : 0;
     return m;
   }
   return { encode };
@@ -729,7 +833,7 @@ function decodeLoop(t) {
 function decodeRings(so, si, po, pi, fo, fi, rule, deep) {
   // how many slots further round the inner ring the same piece of code sits
   const c = (((Math.round((po - pi + HALF_TURN) / SAMPLES_PER_SLOT)) % SLOTS) + SLOTS) % SLOTS;
-  const make = (n, good, rot, reversed) => ({ number: n, digits: String(n).padStart(12, "0"), goodCopies: good, rotation: ((rot % SLOTS) + SLOTS) % SLOTS, reversed });
+  const make = (n, good, rot, reversed) => ({ number: n, digits: n, goodCopies: good, rotation: ((rot % SLOTS) + SLOTS) % SLOTS, reversed });
   const flip = t => [...t].reverse().join("");
   for (const reversed of [false, true]) {
     const O = reversed ? flip(so) : so, I = reversed ? flip(si) : si, sgn = reversed ? -1 : 1;
@@ -750,7 +854,7 @@ function decodeRings(so, si, po, pi, fo, fi, rule, deep) {
       if (!has(0, "K") || !has(1, "K") || !has(SLOTS - 2, "W") || !has(SLOTS - 1, "W") || A === B) continue;
       const diff = [];
       for (let p = 0; p < SLOTS; p++) if (A[p] !== B[p]) diff.push(p);
-      if (diff.length > 26) continue;                    // the rings do not line up here at all
+      if (diff.length > SLOTS * 0.7) continue;           // the rings do not line up here at all
       const found = new Set();
       // outer ring supplies the disagreeing positions diff[a..b] (wrapping), inner ring the others
       for (let a = 0; a < diff.length; a++) for (let len = 1; len < diff.length; len++) {
@@ -798,7 +902,7 @@ function attemptAt(img, cx, cy, M, ratio) {
       if (seen === null || (!ringLike && k > 0)) {
         // a ring changes color at nearly every segment; judge that under each color rule, since
         // dark inks only separate once the colors have been learned
-        if (changes(so) >= 20 || changes(si) >= 20) { ringLike = true; seen = so + si; }
+        if (changes(so) >= SLOTS * 0.55 || changes(si) >= SLOTS * 0.55) { ringLike = true; seen = so + si; }
         else if (seen === null) seen = so + si;
       }
       const r = decodeRings(so, si, po, pi, fo, fi, rule, deep);
@@ -820,17 +924,17 @@ function attemptAt(img, cx, cy, M, ratio) {
 /* The ring tells us where the Data Matrix must be and what it must contain.
    Sample its 196 modules and report the best fraction that agree (0..1). */
 function checkMatrix(img, hit, smp) {
-  const want = DM.encode(hit.digits), W = img.width, d = img.data, M = hit.M;
+  const want = DM.encode(hit.digits), N = want.length, W = img.width, d = img.data, M = hit.M;
   const [gl, gh] = smp.ng, [bl, bh] = smp.nb;
-  const base = (2 * hit.ratio * 0.97) / (16 * Math.SQRT2);
+  const base = (2 * hit.ratio * 0.97) / ((N + 2) * Math.SQRT2);       // the label maker draws N modules plus a quiet module each side
   let best = 0, bestTurn = 0;
   for (const turn of [0])
     for (let da = -4; da <= 4; da += 2)
       for (let sc = 0.88; sc <= 1.121; sc += 0.03) {
         const a = hit.alpha + turn + da * Math.PI / 180, ca = Math.cos(a), sa = Math.sin(a), mod = base * sc;
         let ok = 0;
-        for (let r = 0; r < 14; r++) for (let q = 0; q < 14; q++) {
-          let u = (q - 6.5) * mod; const v = (r - 6.5) * mod;
+        for (let r = 0; r < N; r++) for (let q = 0; q < N; q++) {
+          let u = (q - (N - 1) / 2) * mod; const v = (r - (N - 1) / 2) * mod;
           if (hit.reversed) u = -u;
           const lx = u * ca - v * sa, ly = u * sa + v * ca;
           const o = (Math.round(hit.cy + M[2] * lx + M[3] * ly) * W + Math.round(hit.cx + M[0] * lx + M[1] * ly)) * 4;
@@ -839,7 +943,7 @@ function checkMatrix(img, hit, smp) {
         }
         if (ok > best) { best = ok; bestTurn = turn; }
       }
-  return { frac: best / 196, turn: bestTurn };
+  return { frac: best / (N * N), turn: bestTurn };
 }
 const NUDGE = [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]];
 /* Full automatic read of one frame.
@@ -944,6 +1048,154 @@ function addLabel(list, r) {
 function nearLabel(list, x, y) {
   return list.some(l => l.read && l.trusted && Math.hypot(l.cx - x, l.cy - y) < 0.8 * labelSize(l));
 }
+/* Bottom view of a rack: the photo shows the plate mirrored left to right, so the column on the
+   right of the picture is column 1. Renumbers the columns of a finished grid accordingly. */
+function mirrorColumns(grid) {
+  for (const c of grid.cells) {
+    c.col = grid.cols - 1 - c.col;
+    c.well = (c.row < 26 ? String.fromCharCode(65 + c.row) : "?") + (c.col + 1);
+  }
+  grid.cells.sort((a, b) => a.row - b.row || a.col - b.col);
+  grid.mirrored = true;
+  return grid;
+}
+/* Labels can carry four small codes round an open center instead of one code in the middle:
+   upper left and lower right hold the first six digits, upper right and lower left the second six.
+   This turns each such group into a single 12-digit code so the rest of the reader need not care.
+   - Three or four codes of a group: their positions say which half is which. Returns one code.
+   - Two codes: which half comes first cannot be told from the codes alone, so the pair is passed
+     on marked `partial`, to be settled only if color rings give the label's center and direction.
+   Codes that are not six digits, or have no neighbor, pass through untouched. */
+/* The two halves of an ID on a four-code label (the first half takes the extra character). */
+function quadHalves(id) { const k = Math.ceil(id.length / 2); return [id.slice(0, k), id.slice(k)]; }
+/* opts.plate: a whole-plate photo. There, two small codes are only treated as part of a four-code
+   label if the photo shows at least one complete four-code label; otherwise they are ordinary tube
+   codes that happen to be short. */
+function combineQuadCodes(codes, opts) {
+  opts = opts || {};
+  const six = [], out = [];
+  for (const c of codes) {
+    const size = Math.hypot(c.corners[0][0] - c.corners[2][0], c.corners[0][1] - c.corners[2][1]) / 2;
+    if ([...six, ...out].some(o => o.text === c.text && Math.hypot(o.cx - c.cx, o.cy - c.cy) < size * 0.6)) continue;   // the same code reported twice
+    (/^[0-9A-Z]{1,6}$/.test(c.text) && (!c.format || c.format === "DataMatrix") ? six : out).push(c);
+  }
+  if (six.length < 2) return out.concat(six);
+  const info = six.map(c => {
+    const k = c.corners, ux = k[0][0] - k[3][0], uy = k[0][1] - k[3][1], n = Math.hypot(ux, uy) || 1;
+    return { c, cx: (k[0][0] + k[1][0] + k[2][0] + k[3][0]) / 4, cy: (k[0][1] + k[1][1] + k[2][1] + k[3][1]) / 4,
+             half: Math.hypot(k[0][0] - k[2][0], k[0][1] - k[2][1]) / 2, ux: ux / n, uy: uy / n };
+  });
+  const parent = info.map((_, i) => i), find = i => parent[i] === i ? i : (parent[i] = find(parent[i]));
+  // Quarters of one label are printed the same size and the same way up, side by side or diagonal
+  // to each other. Tubes in a rack sit at any angle, so neighboring tube codes rarely pass this.
+  const mates = (a, b) => {
+    const dist = Math.hypot(a.cx - b.cx, a.cy - b.cy);
+    if (dist >= 5 * (a.half + b.half) / 2 || Math.abs(a.half - b.half) > 0.25 * Math.max(a.half, b.half)) return false;
+    if (a.ux * b.ux + a.uy * b.uy < Math.cos(12 * Math.PI / 180)) return false;
+    const ux = (a.ux + b.ux) / 2, uy = (a.uy + b.uy) / 2, dx = b.cx - a.cx, dy = b.cy - a.cy;
+    const along = Math.abs(dx * ux + dy * uy), across = Math.abs(-dx * uy + dy * ux), big = Math.max(along, across);
+    return Math.min(along, across) < 0.25 * big || Math.abs(along - across) < 0.25 * big;
+  };
+  for (let i = 0; i < info.length; i++) for (let j = i + 1; j < info.length; j++)
+    if (mates(info[i], info[j])) parent[find(i)] = find(j);
+  const groups = new Map();
+  info.forEach((q, i) => { const r = find(i); if (!groups.has(r)) groups.set(r, []); groups.get(r).push(q); });
+  // A photo shows four-code labels if at least one group of three or four codes has matching
+  // diagonal copies. Only then is a short code on its own one surviving quarter of a label.
+  const settled = g => {
+    if (g.length < 3) return false;
+    const t = g.map(q => q.c.text), u = new Set(t);
+    return u.size === 2 && t.length > u.size;          // two halves, at least one of them seen twice
+  };
+  const grouped = [...groups.values()].some(g => g.length >= 3 && g.length <= 4 && settled(g)) || (!opts.plate && [...groups.values()].some(g => g.length >= 2 && g.length <= 4));
+  for (const g of groups.values()) {
+    if (g.length > 4 || !grouped) { for (const q of g) out.push(q.c); continue; }
+    if (g.length === 1) { const q = g[0]; out.push({ partial: true, cx: q.cx, cy: q.cy, half: q.half, parts: [{ text: q.c.text, cx: q.cx, cy: q.cy }] }); continue; }
+    let ux = 0, uy = 0;
+    for (const q of g) { ux += q.ux; uy += q.uy; }
+    const un = Math.hypot(ux, uy) || 1; ux /= un; uy /= un;
+    const rx = -uy, ry = ux;                               // the label's "right", given its "up"
+    const mean = [g.reduce((t, q) => t + q.cx, 0) / g.length, g.reduce((t, q) => t + q.cy, 0) / g.length];
+    const partial = () => out.push({ partial: true, cx: mean[0], cy: mean[1], half: g.reduce((t, q) => t + q.half, 0) / g.length,
+                                     parts: g.map(q => ({ text: q.c.text, cx: q.cx, cy: q.cy })) });
+    if (g.length < 3) { partial(); continue; }
+    let center = mean;
+    if (g.length === 3) {                                  // the two farthest apart are a diagonal pair
+      let far = [g[0], g[1]];
+      for (let i = 0; i < 3; i++) for (let j = i + 1; j < 3; j++)
+        if (Math.hypot(g[i].cx - g[j].cx, g[i].cy - g[j].cy) > Math.hypot(far[0].cx - far[1].cx, far[0].cy - far[1].cy)) far = [g[i], g[j]];
+      center = [(far[0].cx + far[1].cx) / 2, (far[0].cy + far[1].cy) / 2];
+    }
+    const first = new Set(), second = new Set();
+    let reach = 0;
+    for (const q of g) {
+      const x = (q.cx - center[0]) * rx + (q.cy - center[1]) * ry, y = -((q.cx - center[0]) * ux + (q.cy - center[1]) * uy);
+      ((x < 0) === (y < 0) ? first : second).add(q.c.text);      // upper left or lower right = first half
+      for (const p of q.c.corners) reach = Math.max(reach, Math.abs((p[0] - center[0]) * rx + (p[1] - center[1]) * ry), Math.abs((p[0] - center[0]) * ux + (p[1] - center[1]) * uy));
+    }
+    if (first.size !== 1 || second.size !== 1) { partial(); continue; }      // a half missing, or two copies that disagree
+    const at = (a, b) => [center[0] + a * reach * rx + b * reach * ux, center[1] + a * reach * ry + b * reach * uy];
+    out.push({ text: [...first][0] + [...second][0], corners: [at(-1, 1), at(1, 1), at(1, -1), at(-1, -1)], cx: center[0], cy: center[1], quad: true, pieces: g.length });
+  }
+  return out;
+}
+/* ---------- rack ID barcode ---------- */
+/* The rack carries its own barcode just beside A1. Before the wells are worked out, set aside any
+   code that cannot be a tube: anything that is not a Data Matrix code (a linear rack barcode), and
+   Data Matrix codes much bigger or smaller than the tube codes. Returns {tubes, cands}. */
+function splitRackCandidates(codes) {
+  const tubes = [], cands = [];
+  const size = c => c.corners ? Math.hypot(c.corners[0][0] - c.corners[2][0], c.corners[0][1] - c.corners[2][1]) : 0;
+  const dm = codes.filter(c => !c.partial && (!c.format || c.format === "DataMatrix"));
+  const sizes = dm.map(size).sort((a, b) => a - b), med = sizes[sizes.length >> 1] || 0;
+  for (const c of codes) {
+    if (c.partial) { tubes.push(c); continue; }
+    const other = c.format && c.format !== "DataMatrix";
+    const odd = dm.length >= 12 && med > 0 && (size(c) > med * 1.6 || size(c) < med * 0.6);
+    (other || odd ? cands : tubes).push(c);
+  }
+  return { tubes, cands: cands.map(c => ({ text: c.text, format: c.format || "DataMatrix", cx: c.cx, cy: c.cy, corners: c.corners })) };
+}
+/* Where a well's center falls in the photo, and the spacing between wells, from a least-squares fit
+   of the wells that were found (also gives the position of empty wells, such as an empty A1). */
+function gridGeometry(grid) {
+  const cells = grid.cells.filter(c => c.node && !c.node.fragment);
+  if (cells.length < 3) return null;
+  const S = [[0, 0, 0], [0, 0, 0], [0, 0, 0]], bx = [0, 0, 0], by = [0, 0, 0];
+  for (const c of cells) {
+    const v = [1, c.col, c.row];
+    for (let i = 0; i < 3; i++) { bx[i] += v[i] * c.node.cx; by[i] += v[i] * c.node.cy; for (let j = 0; j < 3; j++) S[i][j] += v[i] * v[j]; }
+  }
+  const solve3 = rhs => {
+    const A = S.map(r => r.slice()), v = rhs.slice();
+    for (let i = 0; i < 3; i++) {
+      let p = i;
+      for (let r = i + 1; r < 3; r++) if (Math.abs(A[r][i]) > Math.abs(A[p][i])) p = r;
+      [A[i], A[p]] = [A[p], A[i]]; [v[i], v[p]] = [v[p], v[i]];
+      if (Math.abs(A[i][i]) < 1e-9) return null;
+      for (let r = i + 1; r < 3; r++) { const m = A[r][i] / A[i][i]; for (let c = i; c < 3; c++) A[r][c] -= m * A[i][c]; v[r] -= m * v[i]; }
+    }
+    const q = [0, 0, 0];
+    for (let i = 2; i >= 0; i--) { let t = v[i]; for (let c = i + 1; c < 3; c++) t -= A[i][c] * q[c]; q[i] = t / A[i][i]; }
+    return q;
+  };
+  const qx = solve3(bx), qy = solve3(by);
+  if (!qx || !qy) return null;
+  const colStep = Math.hypot(qx[1], qy[1]), rowStep = Math.hypot(qx[2], qy[2]);
+  const pitch = Math.min(colStep || rowStep, rowStep || colStep);
+  if (!(pitch > 0)) return null;
+  return { pitch, at: (r, c) => [qx[0] + qx[1] * c + qx[2] * r, qy[0] + qy[1] * c + qy[2] * r] };
+}
+/* A grid bigger than 8 x 12 usually means a stray code (often the rack's own) was taken for a tube.
+   Returns the nodes of the outer row or column with the fewest codes (two at most), or []. */
+function oversizeStrays(grid) {
+  const lines = [];
+  if (grid.rows > 8) lines.push(c => c.row === 0, c => c.row === grid.rows - 1);
+  if (grid.cols > 12) lines.push(c => c.col === 0, c => c.col === grid.cols - 1);
+  let best = null;
+  for (const f of lines) { const on = grid.cells.filter(f); if (!best || on.length < best.length) best = on; }
+  return best && best.length && best.length <= 2 ? best.map(c => c.node) : [];
+}
 /* Fold independently decoded Data Matrix codes into the list of labels.
    codes: [{text, corners: [[x, y] x 4]}] with corners in the order top-left, top-right,
    bottom-right, bottom-left of the code itself.
@@ -954,6 +1206,28 @@ function nearLabel(list, x, y) {
 function mergeMatrixCodes(list, codes) {
   let added = 0;
   for (const c of codes) {
+    if (c.partial) {
+      // two small codes of a four-code label: usable only where the rings have given the center and direction
+      const l = list.find(o => o.read && !o.matrixOnly && Math.hypot(o.cx - c.cx, o.cy - c.cy) < labelSize(o) * 0.6);
+      if (!l) {
+        // no rings to say which half is which: record that a label is here but could not be read
+        const size = c.half * 3;
+        if (!list.some(o => Math.hypot(o.cx - c.cx, o.cy - c.cy) < Math.max(labelSize(o), size) * 0.8))
+          list.push({ read: false, fragment: true, cx: c.cx, cy: c.cy, M: [size, 0, 0, size], ratio: 0.7 });
+        continue;
+      }
+      const halves = quadHalves(l.digits);
+      const ux = Math.sin(l.up), uy = -Math.cos(l.up), rx = -uy, ry = ux, seen = [false, false];
+      let clash = false;
+      for (const p of c.parts) {
+        const x = (p.cx - l.cx) * rx + (p.cy - l.cy) * ry, y = -((p.cx - l.cx) * ux + (p.cy - l.cy) * uy), which = (x < 0) === (y < 0) ? 0 : 1;
+        seen[which] = true;
+        if (p.text !== halves[which]) clash = true;
+      }
+      if (clash) { l.matrixMismatch = true; l.matrixText = c.parts.map(p => p.text).join(" / "); }
+      else if (seen[0] && seen[1]) { l.matrix = 1; l.matrixText = l.digits; }
+      continue;
+    }
     const k = c.corners;
     const cx = (k[0][0] + k[1][0] + k[2][0] + k[3][0]) / 4, cy = (k[0][1] + k[1][1] + k[2][1] + k[3][1]) / 4;
     const half = Math.hypot(k[0][0] - k[2][0], k[0][1] - k[2][1]) / 2;
@@ -968,7 +1242,7 @@ function mergeMatrixCodes(list, codes) {
       continue;
     }
     const size = half * 1.3;
-    const node = { read: true, trusted: true, matrixOnly: true, goodCopies: 0, digits: c.text, number: /^\d+$/.test(c.text) ? Number(c.text) : NaN,
+    const node = { read: true, trusted: true, matrixOnly: true, goodCopies: 0, digits: c.text, number: c.text,
                    matrixText: c.text, matrix: 1, cx, cy, M: [size, 0, 0, size], ratio: 0.7, alpha: up, up };
     if (at >= 0) list[at] = node; else list.push(node);
     added++;
@@ -980,7 +1254,7 @@ function mergeMatrixCodes(list, codes) {
    Returns one step function per code so the page can pause between them. */
 function ringsAtCodes(img, list, codes) {
   const f = Math.max(1, Math.round(img.width / 1400));
-  return codes.map(c => () => {
+  return codes.filter(c => !c.partial).map(c => () => {
     const k = c.corners, cx = (k[0][0] + k[1][0] + k[2][0] + k[3][0]) / 4, cy = (k[0][1] + k[1][1] + k[2][1] + k[3][1]) / 4;
     const half = Math.hypot(k[0][0] - k[2][0], k[0][1] - k[2][1]) / 2;
     const r = readLabelAt(img, cx, cy, f, half * 3.2);
@@ -1098,7 +1372,7 @@ function assignGrid(nodes, turn) {
    coordinates of every empty cell inside the grid, plus one extra row and column on each
    side while the grid is still smaller than 8 x 12. */
 function emptyCells(grid) {
-  const cells = grid.cells;
+  const cells = grid.cells.filter(c => !c.node.fragment);      // a position known only from part of a four-code label still counts as empty
   if (cells.length < 4) return [];
   // least-squares plane: position = origin + col * colStep + row * rowStep
   const S = [[0, 0, 0], [0, 0, 0], [0, 0, 0]], bx = [0, 0, 0], by = [0, 0, 0];
@@ -1251,17 +1525,328 @@ function zx() {
   })().catch(() => false);
   return zxReady;
 }
-/* Returns [{text, cx, cy, corners}] for every Data Matrix code found (up to max). */
-async function readMatrixCodes(imageData, max) {
+/* Every Data Matrix code in the picture, exactly as decoded: [{text, cx, cy, corners}]. */
+async function rawMatrixCodes(imageData, max, formats) {
   if (!(await zx())) return [];
   try {
-    const found = await ZXingWASM.readBarcodes(imageData, { formats: ["DataMatrix"], tryHarder: true, tryRotate: true, tryDownscale: true, maxNumberOfSymbols: max });
+    const found = await ZXingWASM.readBarcodes(imageData, { formats: formats || ["DataMatrix"], tryHarder: true, tryRotate: true, tryDownscale: true, maxNumberOfSymbols: max });
     return found.filter(r => r.text && r.position).map(r => {
       const q = r.position, corners = [[q.topLeft.x, q.topLeft.y], [q.topRight.x, q.topRight.y], [q.bottomRight.x, q.bottomRight.y], [q.bottomLeft.x, q.bottomLeft.y]];
-      return { text: r.text, corners, cx: (corners[0][0] + corners[1][0] + corners[2][0] + corners[3][0]) / 4, cy: (corners[0][1] + corners[1][1] + corners[2][1] + corners[3][1]) / 4 };
+      return { text: r.text, format: r.format, corners, cx: (corners[0][0] + corners[1][0] + corners[2][0] + corners[3][0]) / 4, cy: (corners[0][1] + corners[1][1] + corners[2][1] + corners[3][1]) / 4 };
     });
   } catch (e) { return []; }
 }
+/* Barcode types a rack ID might use besides Data Matrix. */
+const RACK_FORMATS = ["Linear-Codes", "QRCode", "MicroQRCode", "Aztec", "PDF417"];
+/* Codes for the live view; groups of four small codes come back as one code holding the whole ID. */
+async function readMatrixCodes(imageData, max) {
+  return combineQuadCodes(await rawMatrixCodes(imageData, max));
+}
+/* Codes for a whole plate. The decoder returns at most 255 codes per call and a plate of four-code
+   labels has 384, so the photo is read whole and then again in four overlapping quarters, and the
+   results are pooled. The quarters also pick up small codes the whole-photo pass misses. */
+async function readPlateCodes(img) {
+  const all = await rawMatrixCodes(img, 255);
+  for (const c of await rawMatrixCodes(img, 8, RACK_FORMATS)) all.push(c);     // a linear or QR rack barcode
+  const w = img.width, h = img.height, tw = Math.ceil(w * 0.56), th = Math.ceil(h * 0.56);
+  for (const [x0, y0] of [[0, 0], [w - tw, 0], [0, h - th], [w - tw, h - th]]) {
+    const part = new ImageData(tw, th);
+    for (let r = 0; r < th; r++) part.data.set(img.data.subarray(((y0 + r) * w + x0) * 4, ((y0 + r) * w + x0 + tw) * 4), r * tw * 4);
+    for (const c of await rawMatrixCodes(part, 255)) {
+      c.cx += x0; c.cy += y0; for (const p of c.corners) { p[0] += x0; p[1] += y0; }
+      all.push(c);                      // duplicates are dropped when the codes are combined
+    }
+    await pause();
+  }
+  return combineQuadCodes(all, { plate: true });
+}
+
+/* ---- brightness and contrast: applied to the camera picture and to plate photos ---- */
+const adjust = { b: 0, c: 0 };
+try { const saved = JSON.parse(localStorage.getItem("colorcode-adjust") || "{}"); adjust.b = +saved.b || 0; adjust.c = +saved.c || 0; } catch (e) { /* defaults */ }
+// Each slider runs -100 to +100 and doubles or halves at the ends; 0 leaves the picture alone.
+const adjustFactors = () => [Math.pow(2, adjust.b / 100), Math.pow(2, adjust.c / 100)];
+const adjustOn = () => adjust.b !== 0 || adjust.c !== 0;
+// Most computer browsers can apply a filter while drawing, which costs almost nothing.
+// Where that is missing (older Safari), the same adjustment is done on the pixels afterwards.
+const canvasFilter = (() => {
+  try {
+    const c = document.createElement("canvas"); c.width = c.height = 1;
+    const x = c.getContext("2d", { willReadFrequently: true });
+    if (!("filter" in x)) return false;
+    x.filter = "brightness(2)"; x.fillStyle = "rgb(60,60,60)"; x.fillRect(0, 0, 1, 1);
+    return x.getImageData(0, 0, 1, 1).data[0] > 100;
+  } catch (e) { return false; }
+})();
+let adjustTable = null, adjustTableKey = "";
+function applyAdjust(imageData) {
+  const key = adjust.b + "," + adjust.c;
+  if (key !== adjustTableKey) {
+    const [B, C] = adjustFactors();
+    adjustTable = new Uint8ClampedArray(256);
+    for (let v = 0; v < 256; v++) adjustTable[v] = ((v / 255 * B - 0.5) * C + 0.5) * 255;   // same as the brightness() then contrast() filters
+    adjustTableKey = key;
+  }
+  const a = imageData.data, t = adjustTable;
+  for (let i = 0; i < a.length; i += 4) { a[i] = t[a[i]]; a[i + 1] = t[a[i + 1]]; a[i + 2] = t[a[i + 2]]; }
+}
+/* Draw src into a canvas at w x h with the current brightness and contrast. */
+function drawAdjusted(c2d, src, w, h) {
+  if (!adjustOn()) { c2d.drawImage(src, 0, 0, w, h); return; }
+  if (canvasFilter) {
+    const [B, C] = adjustFactors();
+    c2d.filter = "brightness(" + B.toFixed(4) + ") contrast(" + C.toFixed(4) + ")";
+    c2d.drawImage(src, 0, 0, w, h);
+    c2d.filter = "none";
+    return;
+  }
+  c2d.drawImage(src, 0, 0, w, h);
+  const d = c2d.getImageData(0, 0, c2d.canvas.width, c2d.canvas.height);
+  applyAdjust(d);
+  c2d.putImageData(d, 0, 0);
+}
+function showAdjust() {
+  $("bright").value = adjust.b; $("contrast").value = adjust.c;
+  $("bright-val").textContent = (adjust.b > 0 ? "+" : "") + adjust.b;
+  $("contrast-val").textContent = (adjust.c > 0 ? "+" : "") + adjust.c;
+}
+function adjustChanged() {
+  adjust.b = +$("bright").value; adjust.c = +$("contrast").value;
+  showAdjust();
+  try { localStorage.setItem("colorcode-adjust", JSON.stringify(adjust)); } catch (e) { /* not saved */ }
+  if (typeof plateAdjustChanged === "function") plateAdjustChanged();
+}
+$("bright").addEventListener("input", adjustChanged);
+$("contrast").addEventListener("input", adjustChanged);
+$("btn-adjust-reset").onclick = () => { $("bright").value = 0; $("contrast").value = 0; adjustChanged(); };
+showAdjust();
+
+/* ---- camera's own settings: focus and exposure, where the camera and browser allow it ----
+   Chrome and Edge on Windows pass these through to most USB webcams (the Razer Kiyo included).
+   The Kiyo's ring light has no software control: it is the dial on the camera. */
+let camTrack = null, camCaps = {}, tuning = false, photoCap = null;
+const camKey = () => "colorcode-cam-" + (($("camsel").selectedOptions[0] || {}).textContent || "default");
+async function camApply(c) {
+  if (!camTrack) return false;
+  try { await camTrack.applyConstraints({ advanced: [c] }); return true; } catch (e) { return false; }
+}
+const camSettings = () => { try { return camTrack.getSettings(); } catch (e) { return {}; } };
+const hasFocus = () => !!(camCaps.focusDistance && camCaps.focusMode && camCaps.focusMode.includes("manual"));
+const hasExpo = () => !!(camCaps.exposureTime && camCaps.exposureMode && camCaps.exposureMode.includes("manual"));
+// exposure slider 0..100 runs along a logarithmic scale between the camera's limits
+function expoFromSlider(v) {
+  const { min, max } = camCaps.exposureTime, lo = Math.max(min, max / 4096, 1e-6);
+  return min > 0 || lo > 0 ? lo * Math.pow(max / lo, v / 100) : min + (max - min) * v / 100;
+}
+function sliderFromExpo(x) {
+  const { min, max } = camCaps.exposureTime, lo = Math.max(min, max / 4096, 1e-6);
+  return Math.round(100 * Math.log(Math.max(lo, Math.min(max, x)) / lo) / Math.log(max / lo));
+}
+const snap = (v, cap) => { const st = cap.step > 0 ? cap.step : 0; return Math.max(cap.min, Math.min(cap.max, st ? cap.min + Math.round((v - cap.min) / st) * st : v)); };
+const fmt = v => Math.abs(v) >= 100 ? Math.round(v).toString() : (+v.toFixed(2)).toString();
+function showCamSettings() {
+  const s = camSettings();
+  if (hasFocus()) {
+    $("focus-auto").checked = s.focusMode === "continuous";
+    if (s.focusDistance !== undefined) { $("focus").value = s.focusDistance; $("focus-val").textContent = fmt(s.focusDistance); }
+  }
+  if (hasExpo()) {
+    $("expo-auto").checked = s.exposureMode === "continuous";
+    if (s.exposureTime !== undefined) { $("expo").value = sliderFromExpo(s.exposureTime); $("expo-val").textContent = fmt(s.exposureTime); }
+  }
+}
+/* Called when the camera starts or stops: shows the controls this camera actually has. */
+async function setupCameraControls(track) {
+  camTrack = track || (stream && stream.getVideoTracks()[0]) || null;
+  camCaps = camTrack && camTrack.getCapabilities ? camTrack.getCapabilities() : {};
+  const f = hasFocus(), x = hasExpo();
+  $("camctl").style.display = camTrack ? "" : "none";
+  document.querySelectorAll("#camctl .fo").forEach(e => e.style.display = f ? "" : "none");
+  document.querySelectorAll("#camctl .ex").forEach(e => e.style.display = x ? "" : "none");
+  $("camctl-none").style.display = "none";
+  $("tune-msg").textContent = "";
+  if (!camTrack) return;
+  if (f) { const c = camCaps.focusDistance; $("focus").min = c.min; $("focus").max = c.max; $("focus").step = c.step > 0 ? c.step : (c.max - c.min) / 100; }
+  if (!f && !x) $("tune-msg").textContent = "This camera, or this browser, does not let the page set focus or exposure. Tuning will still adjust brightness and contrast and check the lighting. For camera settings use Chrome or Edge on Windows.";
+  // a camera that takes bigger stills than its video (the Kiyo: 2688 x 1520 against 1920 x 1080)
+  photoCap = null;
+  try {
+    if ("ImageCapture" in window && camTrack.readyState === "live") {
+      const pc = await new ImageCapture(camTrack).getPhotoCapabilities();
+      if (pc.imageWidth && pc.imageWidth.max > (video.videoWidth || 0)) photoCap = { w: pc.imageWidth.max, h: pc.imageHeight.max };
+    }
+  } catch (e) { photoCap = null; }
+  $("use-photo-row").style.display = photoCap ? "" : "none";
+  if (photoCap) $("use-photo-text").textContent = "Capture plates as " + photoCap.w + " × " + photoCap.h + " photos";
+  // settings saved by an earlier tune of this camera
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem(camKey()) || "null"); } catch (e) { saved = null; }
+  if (saved) {
+    if (f && saved.focus !== undefined) await camApply({ focusMode: "manual", focusDistance: snap(saved.focus, camCaps.focusDistance) });
+    if (x && saved.exposure !== undefined) await camApply({ exposureMode: "manual", exposureTime: snap(saved.exposure, camCaps.exposureTime) });
+    $("use-photo").checked = !!(photoCap && saved.photo);
+    $("tune-msg").textContent = "Using the focus and exposure saved for this camera on " + new Date(saved.time).toLocaleDateString() + ". Press Tune to redo them.";
+  }
+  showCamSettings();
+}
+$("focus-auto").onchange = async () => { await camApply($("focus-auto").checked ? { focusMode: "continuous" } : { focusMode: "manual", focusDistance: +$("focus").value }); showCamSettings(); };
+$("expo-auto").onchange = async () => { await camApply($("expo-auto").checked ? { exposureMode: "continuous" } : { exposureMode: "manual", exposureTime: snap(expoFromSlider(+$("expo").value), camCaps.exposureTime) }); showCamSettings(); };
+$("focus").oninput = () => { $("focus-auto").checked = false; $("focus-val").textContent = fmt(+$("focus").value); camApply({ focusMode: "manual", focusDistance: +$("focus").value }); };
+$("expo").oninput = () => { $("expo-auto").checked = false; const v = snap(expoFromSlider(+$("expo").value), camCaps.exposureTime); $("expo-val").textContent = fmt(v); camApply({ exposureMode: "manual", exposureTime: v }); };
+
+/* One frame from the camera at its full video size, with brightness and contrast applied. */
+let grabCanvas = null;
+function grabFrame() {
+  const w = video.videoWidth, h = video.videoHeight;
+  grabCanvas = grabCanvas || document.createElement("canvas");
+  if (grabCanvas.width !== w || grabCanvas.height !== h) { grabCanvas.width = w; grabCanvas.height = h; }
+  const g = grabCanvas.getContext("2d", { willReadFrequently: true });
+  drawAdjusted(g, video, w, h);
+  return g.getImageData(0, 0, w, h);
+}
+/* How sharp the middle of a frame is: average squared change between neighboring pixels. */
+function sharpness(img) {
+  const { width: w, height: h, data: d } = img;
+  let s = 0, n = 0;
+  for (let y = Math.floor(h * 0.1); y < h * 0.9 - 2; y += 2)
+    for (let x = Math.floor(w * 0.1); x < w * 0.9 - 2; x += 2) {
+      const o = (y * w + x) * 4, g = d[o + 1], gx = d[o + 5] - g, gy = d[o + 4 * w + 1] - g;
+      s += gx * gx + gy * gy; n++;
+    }
+  return n ? s / n : 0;
+}
+/* Light in the middle of a frame. A rack is mostly dark plastic, so the level that matters is that of
+   the bright parts (the white of the tube codes): the 95th percentile. Also the share blown out to white. */
+function lightLevel(img) {
+  const { width: w, height: h, data: d } = img, hist = new Uint32Array(256);
+  let hi = 0, n = 0;
+  for (let y = Math.floor(h * 0.1); y < h * 0.9; y += 3)
+    for (let x = Math.floor(w * 0.1); x < w * 0.9; x += 3) {
+      const o = (y * w + x) * 4, v = ((d[o] + d[o + 1] + d[o + 2]) / 3) | 0;
+      hist[v]++; if (v >= 250) hi++; n++;
+    }
+  let acc = 0, top = 255;
+  for (let v = 255; v >= 0; v--) { acc += hist[v]; if (acc >= n * 0.05) { top = v; break; } }
+  return { top, clipped: hi / n };
+}
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+/* Score one camera setting: how many codes can be read, then (as a tie-break) sharpness or exposure. */
+async function scoreFrame(kind) {
+  await sleep(kind === "focus" ? 500 : 350);          // let the lens move or the exposure settle
+  const img = grabFrame();
+  const codes = (await rawMatrixCodes(img, 255)).length;
+  const light = lightLevel(img);
+  const tie = kind === "focus" ? sharpness(img) : -Math.abs(light.top - 215) - 400 * light.clipped;      // whites bright but not blown out
+  return { codes, tie, light };
+}
+const better = (a, b) => !b || a.codes > b.codes || (a.codes === b.codes && a.tie > b.tie);
+/* Find the focus and exposure that let the most codes be read, check the light, and decide
+   whether full-resolution photos read better than video frames. */
+async function autoTune() {
+  if (tuning || !stream || !video.videoWidth) return;
+  tuning = true;
+  const msg = $("tune-msg"), btn = $("btn-tune"), cap = $("btn-capture");
+  btn.disabled = true; cap.disabled = true;
+  const say = t => { msg.textContent = t; };
+  try {
+    const start = await scoreFrame("exposure");
+    let note = [];
+    if (hasFocus()) {
+      const c = camCaps.focusDistance, n = 9, tried = [];
+      let best = null;
+      const tryFocus = async v => {
+        v = snap(v, c);
+        if (tried.some(t => Math.abs(t - v) < 1e-9)) return;
+        tried.push(v);
+        await camApply({ focusMode: "manual", focusDistance: v });
+        $("focus").value = v; $("focus-val").textContent = fmt(v); $("focus-auto").checked = false;
+        const r = await scoreFrame("focus");
+        say("Focus " + fmt(v) + ": " + r.codes + " codes read" + (best ? " (best so far " + best.codes + ")" : ""));
+        if (better(r, best)) best = { ...r, v };
+      };
+      for (let i = 0; i < n; i++) await tryFocus(c.min + (c.max - c.min) * i / (n - 1));
+      const gap = (c.max - c.min) / (n - 1);                       // then look between the best and its neighbors
+      const b0 = best.v;
+      for (const d of [-gap / 2, gap / 2, -gap / 4, gap / 4]) await tryFocus(b0 + d);
+      await camApply({ focusMode: "manual", focusDistance: best.v });
+      $("focus").value = best.v; $("focus-val").textContent = fmt(best.v);
+      note.push("focus " + fmt(best.v));
+    }
+    if (hasExpo()) {
+      let best = null;
+      for (const v of [10, 25, 40, 55, 70, 85, 100]) {
+        const e = snap(expoFromSlider(v), camCaps.exposureTime);
+        await camApply({ exposureMode: "manual", exposureTime: e });
+        $("expo").value = v; $("expo-val").textContent = fmt(e); $("expo-auto").checked = false;
+        const r = await scoreFrame("exposure");
+        say("Exposure " + fmt(e) + ": " + r.codes + " codes read" + (best ? " (best so far " + best.codes + ")" : ""));
+        if (better(r, best)) best = { ...r, e, v };
+      }
+      await camApply({ exposureMode: "manual", exposureTime: best.e });
+      $("expo").value = best.v; $("expo-val").textContent = fmt(best.e);
+      note.push("exposure " + fmt(best.e));
+    }
+    // software contrast, on one frame at the chosen settings
+    await sleep(400);
+    const frameCanvas = document.createElement("canvas");
+    frameCanvas.width = video.videoWidth; frameCanvas.height = video.videoHeight;
+    frameCanvas.getContext("2d").drawImage(video, 0, 0);
+    const keep = { b: adjust.b, c: adjust.c };
+    let bestAdj = null;
+    for (const [b, c] of [[keep.b, keep.c], [0, 0], [0, 40], [-25, 40], [25, 40], [0, 80]]) {
+      adjust.b = b; adjust.c = c;
+      const g = frameCanvas.getContext("2d", { willReadFrequently: true }), tmp = document.createElement("canvas");
+      tmp.width = frameCanvas.width; tmp.height = frameCanvas.height;
+      const tx = tmp.getContext("2d", { willReadFrequently: true });
+      drawAdjusted(tx, frameCanvas, tmp.width, tmp.height);
+      const codes = (await rawMatrixCodes(tx.getImageData(0, 0, tmp.width, tmp.height), 255)).length;
+      say("Brightness " + b + ", contrast " + c + ": " + codes + " codes read");
+      if (!bestAdj || codes > bestAdj.codes) bestAdj = { b, c, codes };
+    }
+    adjust.b = bestAdj.b; adjust.c = bestAdj.c; showAdjust();
+    try { localStorage.setItem("colorcode-adjust", JSON.stringify(adjust)); } catch (e) { /* not saved */ }
+    const end = await scoreFrame("exposure");
+    // full-resolution still, where the camera offers one
+    let usePhoto = false;
+    if (photoCap) {
+      say("Trying a " + photoCap.w + " × " + photoCap.h + " photo…");
+      try {
+        const blob = await takeStill();
+        const bmp = await createImageBitmap(blob), pc = document.createElement("canvas");
+        pc.width = bmp.width; pc.height = bmp.height;
+        const px = pc.getContext("2d", { willReadFrequently: true });
+        drawAdjusted(px, bmp, pc.width, pc.height);
+        const n = (await rawMatrixCodes(px.getImageData(0, 0, pc.width, pc.height), 255)).length;
+        usePhoto = n > end.codes;
+        note.push("photo " + n + " codes against " + end.codes + " from video");
+      } catch (e) { note.push("full-resolution photo not available"); }
+      $("use-photo").checked = usePhoto;
+    }
+    try { localStorage.setItem(camKey(), JSON.stringify({ focus: hasFocus() ? +$("focus").value : undefined, exposure: hasExpo() ? snap(expoFromSlider(+$("expo").value), camCaps.exposureTime) : undefined, photo: usePhoto, time: Date.now() })); } catch (e) { /* not saved */ }
+    // the ring light is a dial on the camera, so the page can only say which way to turn it
+    const L = end.light;
+    let light = "Lighting looks fine.";
+    if (L.clipped > 0.03) light = "Glare: " + Math.round(L.clipped * 100) + "% of the picture is blown out to white. Turn the ring light down (anticlockwise) a step or two, or tilt the rack slightly, then tune again.";
+    else if (L.top < 120) light = "The picture is dark. Turn the ring light up (clockwise) a step or two, then tune again.";
+    say("Done: " + end.codes + " codes readable (was " + start.codes + ")" + (note.length ? "; " + note.join(", ") : "") +
+        "; brightness " + adjust.b + ", contrast " + adjust.c + ". " + light);
+  } catch (e) {
+    say("Tuning stopped: " + (e && e.message ? e.message : e));
+  } finally {
+    tuning = false; btn.disabled = false; cap.disabled = false;
+    showCamSettings();
+  }
+}
+$("btn-tune").onclick = autoTune;
+async function takeStill() {
+  const ic = new ImageCapture(camTrack);
+  return await Promise.race([
+    ic.takePhoto({ imageWidth: photoCap.w, imageHeight: photoCap.h }),
+    new Promise((_, no) => setTimeout(() => no(new Error("the camera did not return a photo")), 8000))]);
+}
+
+/* Camera resolution: plate photos want every pixel the camera has; live reading is faster at 1080p. */
+function camSize() { return isPlateMode() ? [3840, 2160] : [1920, 1080]; }
 
 /* ---------- camera ---------- */
 // iOS only delivers frames to a video that is in the page, inline and muted
@@ -1291,7 +1876,7 @@ async function listCameras() {
   try {
     const devs = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === "videoinput");
     const sel = $("camsel"), keep = sel.value;
-    sel.innerHTML = '<option value="">Back camera</option>';
+    sel.innerHTML = '<option value="">Default camera</option>';
     devs.forEach((d, i) => {
       const o = document.createElement("option");
       o.value = d.deviceId; o.textContent = d.label || "Camera " + (i + 1);
@@ -1308,6 +1893,7 @@ function stopCamera() {
   $("btn-cam").textContent = "Start camera";
   cam.hidden = true; $("cam-hint").hidden = false;
   setPill("status", "Camera off", "idle");
+  if (typeof cameraState === "function") cameraState();
 }
 async function startCamera() {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -1318,11 +1904,11 @@ async function startCamera() {
   try {
     const id = $("camsel").value;
     stream = await navigator.mediaDevices.getUserMedia({
-      video: id ? { deviceId: { exact: id }, width: { ideal: 1920 }, height: { ideal: 1080 } }
-                : { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false });
+      video: id ? { deviceId: { exact: id }, width: { ideal: camSize()[0] }, height: { ideal: camSize()[1] } }
+                : { facingMode: { ideal: "environment" }, width: { ideal: camSize()[0] }, height: { ideal: camSize()[1] } }, audio: false });
   } catch (e) {
     $("cam-hint").textContent = e.name === "NotAllowedError"
-      ? "Camera permission was refused. In Safari tap the aA (or page) button, choose Website Settings, set Camera to Allow, then tap Start camera again."
+      ? "Camera permission was refused. On a computer, click the camera icon in the address bar and choose Allow. On an iPhone, tap the aA button in Safari, choose Website Settings and set Camera to Allow. Then press Start camera again."
       : "Could not open the camera (" + e.name + "). Check that no other program is using it.";
     return;
   }
@@ -1335,6 +1921,7 @@ async function startCamera() {
   running = true;
   try { if (navigator.wakeLock) wake = await navigator.wakeLock.request("screen"); } catch (e) { wake = null; }
   listCameras();
+  if (typeof cameraState === "function") cameraState();
   requestAnimationFrame(tick);
 }
 $("btn-cam").onclick = () => stream ? stopCamera() : startCamera();
@@ -1393,9 +1980,10 @@ function lookForMatrix(w, h) {
   mxCanvas = mxCanvas || document.createElement("canvas");
   if (mxCanvas.width !== w || mxCanvas.height !== h) { mxCanvas.width = w; mxCanvas.height = h; }
   const mctx = mxCanvas.getContext("2d", { willReadFrequently: true });
-  mctx.drawImage(video, 0, 0, w, h);
+  drawAdjusted(mctx, video, w, h);
   const flip = $("mirror").checked;
-  readMatrixCodes(mctx.getImageData(0, 0, w, h), 4).then(codes => {
+  readMatrixCodes(mctx.getImageData(0, 0, w, h), 12).then(found => {
+    const codes = found.filter(c => !c.partial);
     if (flip) for (const c of codes) { c.cx = w - c.cx; for (const p of c.corners) p[0] = w - p[0]; }
     mxCodes = codes; mxAt = performance.now(); mxBusy = false;
     const ring = lastScan && lastScan.status === "read" && lastScan.trusted && performance.now() - lastScanAt < 500;
@@ -1492,9 +2080,11 @@ function tick() {
   const w = cam.width, h = cam.height;
   if (!w || video.readyState < 2) { requestAnimationFrame(tick); return; }
   ctx.save();
-  if ($("mirror").checked) { ctx.translate(w, 0); ctx.scale(-1, 1); }
-  ctx.drawImage(video, 0, 0, w, h);
+  const plate = typeof isPlateMode === "function" && isPlateMode();
+  if ($("mirror").checked && !plate) { ctx.translate(w, 0); ctx.scale(-1, 1); }     // a plate is always shown as the camera sees it
+  drawAdjusted(ctx, video, w, h);
   ctx.restore();
+  if (plate) { drawPlateGuide(ctx, w, h); requestAnimationFrame(tick); return; }      // plate mode: preview only, nothing is read until Capture
   if (++frameNo % 2 === 0) {
     lastScan = scanFrame(ctx.getImageData(0, 0, w, h), track, 110);
     lastScanAt = performance.now();
@@ -1533,19 +2123,165 @@ let plateList = null, plateGrid = null, plateTurn, plateDims = null, plateBusy =
 const pause = () => new Promise(r => setTimeout(r, 0));
 const TURN_TEXT = ["A1 at the top left of the photo", "A1 at the top right of the photo", "A1 at the bottom right of the photo", "A1 at the bottom left of the photo"];
 
+function isPlateMode() { return $("mode-plate").getAttribute("aria-pressed") === "true"; }
 function setMode(plate) {
+  if (plate === isPlateMode()) return;
   $("mode-live").setAttribute("aria-pressed", String(!plate));
   $("mode-plate").setAttribute("aria-pressed", String(plate));
   $("live").style.display = plate ? "none" : "contents";
   $("plate").hidden = !plate; $("plate").style.display = plate ? "contents" : "none";
-  if (plate && stream) stopCamera();
+  // restart a running camera so it uses the resolution that suits the mode
+  if (stream) { stopCamera(); startCamera(); }
+  cameraState();
 }
+/* Show what fits the current mode and camera: the camera picture is hidden in plate mode
+   until the camera is started, so a phone user goes straight to Take plate photo. */
+function cameraState() {
+  const plate = isPlateMode(), on = !!stream;
+  $("camwrap").style.display = plate && !on ? "none" : "";
+  $("btn-capture").style.display = plate && on ? "" : "none";
+  $("cam-hint").textContent = plate
+    ? "Press Start camera, then fit the whole rack inside the box and press Capture plate."
+    : "Press Start camera. Works with a phone camera or a computer webcam. Hold a label in view; it reads at any rotation and logs each label by itself.";
+  if (plate && on) setPill("status", "Plate mode: press Capture plate", "idle");
+  if (on && (!camTrack || camTrack !== stream.getVideoTracks()[0])) setupCameraControls();
+  if (!on && camTrack) { camTrack = null; $("camctl").style.display = "none"; }
+}
+/* A box with the proportions of a 96-well plate, to help frame the rack. */
+function drawPlateGuide(c, w, h) {
+  const ratio = 127.76 / 85.48, bw = Math.min(w * 0.92, h * 0.92 * ratio), bh = bw / ratio;
+  c.save();
+  c.lineWidth = Math.max(2, w / 500); c.setLineDash([w / 60, w / 90]);
+  c.strokeStyle = "rgba(255,255,255,.85)";
+  c.strokeRect((w - bw) / 2, (h - bh) / 2, bw, bh);
+  c.setLineDash([]);
+  c.font = "600 " + Math.round(Math.max(14, w / 55)) + "px -apple-system, system-ui, sans-serif";
+  c.textAlign = "center"; c.lineWidth = 4; c.strokeStyle = "rgba(0,0,0,.7)"; c.fillStyle = "#fff";
+  const msg = "Fit the rack inside the box  ·  " + w + " × " + h + " camera";
+  c.strokeText(msg, w / 2, (h - bh) / 2 - 8 > 20 ? (h - bh) / 2 - 8 : h - 10);
+  c.fillText(msg, w / 2, (h - bh) / 2 - 8 > 20 ? (h - bh) / 2 - 8 : h - 10);
+  c.restore();
+}
+async function captureFromCamera() {
+  if (!stream || !video.videoWidth || plateBusy || tuning) return;
+  if (photoCap && $("use-photo").checked) {
+    try { const blob = await takeStill(); beep(); readPlate(blob); return; }
+    catch (e) { $("plate-status").textContent = "The camera did not return a full-resolution photo, so a video frame was used."; }
+  }
+  const c = document.createElement("canvas");
+  c.width = video.videoWidth; c.height = video.videoHeight;
+  c.getContext("2d").drawImage(video, 0, 0);          // the raw frame; brightness and contrast are applied when it is read
+  beep();
+  readPlate(c);
+}
+$("btn-capture").onclick = captureFromCamera;
+// space bar captures while the camera is on in plate mode (it would otherwise press whichever button
+// has focus, often Stop camera); typing in a box or moving a slider is left alone
+document.addEventListener("keydown", e => {
+  if (e.key !== " " || e.repeat || !isPlateMode() || !stream) return;
+  const el = document.activeElement;
+  if (el && (/SELECT|TEXTAREA/.test(el.tagName) || (el.tagName === "INPUT" && el.type !== "checkbox"))) return;
+  e.preventDefault(); captureFromCamera();
+});
+let lastPlateSource = null;
+/* ---- rack ID ---- */
+let rackCands = [], rack = null, dirFromRack = false, turnLocked = false;
+/* Take codes that cannot be tubes out of the grid, and pick the rack barcode: the candidate closest
+   to well A1. When the tubes give no sure direction (tube codes point any way), the rack barcode
+   also decides the plate's direction: A1 is the corner beside it. */
+function settleGrid() {
+  plateGrid = gridOf(plateTurn);
+  for (let k = 0; k < 3 && (plateGrid.rows > 8 || plateGrid.cols > 12); k++) {
+    const strays = oversizeStrays(plateGrid);
+    if (!strays.length) break;
+    for (const n of strays) if (n.read) rackCands.push(rackFrom(n));
+    plateList = plateList.filter(n => !strays.includes(n));
+    plateGrid = gridOf(plateTurn);
+  }
+  const placed = new Set(plateGrid.cells.map(c => c.node));
+  const off = plateList.filter(n => n.read && !placed.has(n));        // a plain matrix code or a color-ring label
+  for (const n of off) rackCands.push(rackFrom(n));
+  if (off.length) plateList = plateList.filter(n => !off.includes(n));
+  pickRack();
+}
+/* A rack candidate from a label that was read: a plain Data Matrix code, or a color-ring label
+   (rings, with or without the matrix code in the middle). */
+function rackFrom(n) {
+  const how = n.matrixOnly ? "DataMatrix" : n.matrixText === n.digits || n.matrix >= 0.9 ? "color-ring label (rings and matrix code agree)" : "color-ring label";
+  return { text: n.digits, format: how, cx: n.cx, cy: n.cy, fromGrid: true };
+}
+/* No rack code found: look for a color-ring label in the spots just outside A1, for every way round
+   the plate could be (the tube codes do not say which corner is A1). A rack label may be larger than
+   a tube label, so a wider area is searched. Returns true if one was found. */
+function findRackLabel(img) {
+  if (rack || !plateGrid.cells.length) return false;
+  const f = Math.max(1, Math.round(img.width / 1400));
+  const turns = turnLocked ? [plateTurn] : plateGrid.upKnown ? [plateGrid.turn] : [0, 1, 2, 3];
+  const spots = [[0, -1], [-1, 0], [-1, -1], [0, -1.5], [-1.5, 0]];       // beside A1, outside the wells
+  const seen = [];
+  for (const tn of turns) {
+    const g = tn === plateGrid.turn ? plateGrid : gridOf(tn), geo = gridGeometry(g);
+    if (!geo) continue;
+    for (const [r, c] of spots) {
+      const [x, y] = geo.at(r, c);
+      if (x < 0 || y < 0 || x >= img.width || y >= img.height || seen.some(p => Math.hypot(p[0] - x, p[1] - y) < geo.pitch * 0.4)) continue;
+      seen.push([x, y]);
+      const n = readNear(img, x, y, geo.pitch * 1.4, f);
+      if (n && n.read && n.trusted && !plateList.some(o => o.read && o.digits === n.digits)) {
+        rackCands.push({ ...rackFrom(n), format: n.matrix >= 0.9 ? "color-ring label (rings and matrix code agree)" : "color-ring label" });
+        pickRack();
+        if (rack) return true;
+      }
+    }
+  }
+  return false;
+}
+function pickRack() {
+  rack = null;
+  if (!rackCands.length || !plateGrid.cells.length) { dirFromRack = false; return; }
+  const turns = turnLocked ? [plateTurn] : plateGrid.upKnown ? [plateGrid.turn] : [0, 1, 2, 3];
+  let best = null;
+  for (const tn of turns) {
+    const g = tn === plateGrid.turn ? plateGrid : gridOf(tn);
+    if (g.rows > 8 || g.cols > 12) continue;
+    const geo = gridGeometry(g);
+    if (!geo) continue;
+    const a1 = geo.at(0, 0);
+    for (const c of rackCands) {
+      const d = Math.hypot(c.cx - a1[0], c.cy - a1[1]) / geo.pitch;
+      // prefer a plate the long way round (12 across) when distances are close
+      const score = d + (g.cols >= g.rows ? 0 : 0.5);
+      if (!best || score < best.score) best = { score, d, tn, c, g };
+    }
+  }
+  if (!best || best.d > 3) { dirFromRack = false; return; }      // nothing close enough to A1 to be its barcode
+  rack = best.c;
+  if (!turnLocked && !plateGrid.upKnown && best.g !== plateGrid) { plateGrid = best.g; plateTurn = best.tn; }
+  dirFromRack = !turnLocked && !plateGrid.upKnown;
+}
+function showRack() {
+  const box = $("rack-id"), src = $("rack-src");
+  if (box.dataset.typed !== "1") box.value = rack ? rack.text : "";
+  const others = rackCands.length - (rack ? 1 : 0);
+  src.textContent = box.dataset.typed === "1" ? "Typed in." :
+    rack ? "Read from the " + rack.format + (/label/.test(rack.format) ? "" : " barcode") + " beside A1." + (others ? " " + others + " other code" + (others === 1 ? "" : "s") + " outside the wells ignored." : "")
+         : rackCands.length ? "A code was found outside the wells, but not beside A1. Type the rack ID." : "No rack barcode found beside A1. Type the rack ID.";
+}
+$("rack-id").addEventListener("input", () => { $("rack-id").dataset.typed = $("rack-id").value ? "1" : ""; $("rack-src").textContent = "Typed in."; });
+function plateAdjustChanged() { $("btn-reread").style.display = lastPlateSource && !plateBusy ? "" : "none"; }
+$("btn-reread").onclick = () => { if (lastPlateSource) readPlate(lastPlateSource); };
 $("mode-live").onclick = () => setMode(false);
 $("mode-plate").onclick = () => setMode(true);
 
+/* The well grid for the current photo; in bottom view the columns count from the right. */
+function gridOf(turn) {
+  const g = assignGrid(plateList, turn);
+  return $("bottom-view").checked ? mirrorColumns(g) : g;
+}
 function cellState(c) {
   if (!c) return { cls: "", text: "nothing found", number: "" };
   const o = c.node;
+  if (o.fragment) return { cls: "unread", text: "only part of the four-code label could be read", number: "" };
   if (!o.read || !o.trusted) return { cls: "unread", text: "label not readable", number: "" };
   if (o.matrixOnly) return { cls: "ok", text: "matrix code only (no rings read)", number: o.digits };
   if (o.matrixMismatch) return { cls: "check", text: "rings and matrix disagree: matrix reads " + o.matrixText, number: o.digits };
@@ -1579,6 +2315,14 @@ function drawPhoto() {
     x.lineWidth = Math.max(2, r * 0.16); x.strokeStyle = "rgba(0,0,0,.85)"; x.fillStyle = "#fff";
     x.strokeText(c.well, o.cx * k, o.cy * k); x.fillText(c.well, o.cx * k, o.cy * k);
   }
+  if (rack) {
+    const geo = gridGeometry(plateGrid), r = (geo ? geo.pitch * 0.45 : 30) * k;
+    x.lineWidth = Math.max(3, r * 0.12); x.strokeStyle = "#3fd0e0";
+    x.strokeRect(rack.cx * k - r, rack.cy * k - r, 2 * r, 2 * r);
+    x.font = "700 " + Math.max(10, Math.round(r * 0.5)) + "px -apple-system, system-ui, sans-serif";
+    x.textAlign = "center"; x.textBaseline = "middle"; x.lineWidth = 4; x.strokeStyle = "rgba(0,0,0,.85)"; x.fillStyle = "#3fd0e0";
+    x.strokeText("RACK", rack.cx * k, rack.cy * k); x.fillText("RACK", rack.cx * k, rack.cy * k);
+  }
 }
 function renderPlate() {
   const t = plateTable(), g = plateGrid;
@@ -1594,18 +2338,21 @@ function renderPlate() {
   if (bad) notes.push(bad + (bad === 1 ? " label was" : " labels were") + " found but could not be read.");
   if (chk) notes.push(chk + (chk === 1 ? " read rests" : " reads rest") + " on one ring with no matrix to confirm; the check code makes a wrong number very unlikely.");
   if (g.rows > 8 || g.cols > 12) notes.push("The labels form a " + g.rows + " by " + g.cols + " grid, which is bigger than a 96 plate. Check the photo.");
-  notes.push((g.upKnown && plateTurn === undefined ? "Plate direction taken from the way the labels point: " : "Plate direction: ") + TURN_TEXT[g.turn] + ". Use Turn plate if that is wrong.");
+  notes.push((dirFromRack ? "Plate direction taken from the rack barcode beside A1: " : g.upKnown && !turnLocked ? "Plate direction taken from the way the labels point: " : "Plate direction: ") + TURN_TEXT[(g.turn + (g.mirrored ? 1 : 0)) % 4] + (g.mirrored ? " (bottom view)" : "") + ". Use Turn plate if that is wrong.");
   if (g.rows < 8 || g.cols < 12) notes.push("Only part of a plate was found (" + g.rows + " by " + g.cols + "), so wells are counted from the top-left label that was seen.");
   $("plate-note").textContent = notes.join(" ");
+  showRack();
   const map = $("map");
   map.style.setProperty("--cols", t.cols);
   map.innerHTML = "";
   const add = (tag, text) => { const e = document.createElement(tag); e.textContent = text; map.appendChild(e); return e; };
   add("span", "");
-  for (let c = 0; c < t.cols; c++) add("span", c + 1);
-  const rowMajor = t.list.slice().sort((a, b) => a.row - b.row || a.col - b.col);
+  // in bottom view the map is drawn the way the photo looks: column 1 on the right
+  const flip = !!g.mirrored;
+  for (let c = 0; c < t.cols; c++) add("span", flip ? t.cols - c : c + 1);
+  const rowMajor = t.list.slice().sort((a, b) => a.row - b.row || (flip ? b.col - a.col : a.col - b.col));
   for (const w of rowMajor) {
-    if (w.col === 0) add("span", w.well[0]);
+    if (w.col === (flip ? t.cols - 1 : 0)) add("span", w.well[0]);
     const b = add("button", "");
     b.type = "button"; b.className = w.cls + (selWell === w.well ? " sel" : ""); b.setAttribute("aria-label", w.well + ": " + (w.number || w.text));
     b.onclick = () => { selWell = w.well; $("well-detail").textContent = w.well + "  " + (w.number ? w.number + "  (" + w.text + ")" : w.text); renderPlate(); };
@@ -1619,33 +2366,44 @@ function renderPlate() {
   }
   drawPhoto();
 }
-async function loadPhoto(file) {
-  const url = URL.createObjectURL(file);
-  try {
-    const im = new Image();
+/* Load a plate picture (a photo file, or a frame captured from the camera), apply brightness and
+   contrast, and return its pixels. Also draws a smaller copy on screen. */
+async function loadPhoto(src) {
+  let im, iw, ih, url = null;
+  if (src instanceof HTMLCanvasElement) { im = src; iw = src.width; ih = src.height; }
+  else {
+    url = URL.createObjectURL(src);
+    im = new Image();
     im.src = url;
     await im.decode();
+    iw = im.naturalWidth; ih = im.naturalHeight;
+  }
+  try {
     // keep within what a phone canvas allows (about 16 million pixels)
-    const k = Math.min(1, 4032 / Math.max(im.naturalWidth, im.naturalHeight), Math.sqrt(15e6 / (im.naturalWidth * im.naturalHeight)));
-    const w = Math.round(im.naturalWidth * k), h = Math.round(im.naturalHeight * k);
+    const k = Math.min(1, 4032 / Math.max(iw, ih), Math.sqrt(15e6 / (iw * ih)));
+    const w = Math.round(iw * k), h = Math.round(ih * k);
     const work = document.createElement("canvas");
     work.width = w; work.height = h;
     const wx = work.getContext("2d", { willReadFrequently: true });
-    wx.drawImage(im, 0, 0, w, h);
+    drawAdjusted(wx, im, w, h);
     const data = wx.getImageData(0, 0, w, h);
     // smaller copy for the screen
     const kd = Math.min(1, 1600 / Math.max(w, h)), cv = $("photo");
     cv.width = Math.round(w * kd); cv.height = Math.round(h * kd);
     const cx2 = cv.getContext("2d", { willReadFrequently: true });
-    cx2.drawImage(im, 0, 0, cv.width, cv.height);
+    drawAdjusted(cx2, im, cv.width, cv.height);
     plateDims = { k: kd, shown: cx2.getImageData(0, 0, cv.width, cv.height) };
     work.width = work.height = 1;       // hand the big canvas back
     return data;
-  } finally { URL.revokeObjectURL(url); }
+  } finally { if (url) URL.revokeObjectURL(url); }
 }
 async function readPlate(file) {
   if (!file || plateBusy) return;
   plateBusy = true; selWell = null; plateTurn = undefined;
+  lastPlateSource = file;
+  $("btn-reread").style.display = "none";
+  rackCands = []; rack = null; dirFromRack = false; turnLocked = false;
+  $("rack-id").dataset.typed = ""; $("save-msg").textContent = "";
   const status = $("plate-status");
   $("plate-results").hidden = true; $("plate-results").style.display = "none";
   try {
@@ -1656,10 +2414,12 @@ async function readPlate(file) {
     // Matrix codes first: they decode quickly and each one marks exactly where a label is.
     status.textContent = "Reading matrix codes…";
     await new Promise(r => setTimeout(r, 30));
-    const codes = await readMatrixCodes(img, 255);
+    const split = splitRackCandidates(await readPlateCodes(img));
+    const codes = split.tubes;
+    rackCands = split.cands;
     let last = performance.now();
     plateList = [];
-    if (codes.length >= 12) {
+    if (codes.filter(c => !c.partial).length >= 12) {
       // enough codes to map the plate: read the rings at each code, then look at the empty positions
       const steps = ringsAtCodes(img, plateList, codes);
       for (let i = 0; i < steps.length; i++) {
@@ -1673,6 +2433,7 @@ async function readPlate(file) {
       status.textContent = "Checking the empty positions…";
       await pause();
       fillGaps(img, plateList, undefined);
+      mergeMatrixCodes(plateList, codes);      // again: rings found just now may settle four-code labels that were only partly read
     } else {
       // few or no matrix codes: search the whole photo for color rings
       status.textContent = "Finding labels…";
@@ -1690,7 +2451,8 @@ async function readPlate(file) {
       plateList = sc.list;
       mergeMatrixCodes(plateList, codes);
     }
-    plateGrid = assignGrid(plateList, undefined);
+    settleGrid();
+    if (!rack) { status.textContent = "Looking for a rack label beside A1…"; await pause(); findRackLabel(img); }
     // unread labels only: brightness +1, -1, +2, -2 ... up to the limit; a label stops as soon as it reads
     const maxStep = Math.max(0, Math.min(MAX_BRIGHT_STEP, parseInt($("retries").value, 10) || 0));
     let recovered = 0;
@@ -1707,13 +2469,14 @@ async function readPlate(file) {
         if (performance.now() - last2 > 60) { await pause(); last2 = performance.now(); }
       }
     }
-    if (recovered) plateGrid = assignGrid(plateList, undefined);
+    if (recovered) settleGrid();
     if (!plateGrid.cells.length) { status.textContent = "No labels found in this photo. Move closer, hold the phone square to the plate, and avoid glare."; return; }
     status.textContent = "";
     $("plate-results").hidden = false; $("plate-results").style.display = "contents";
     $("well-detail").textContent = "Tap a well to see its number.";
     renderPlate();
     beep();
+    if (!rack) $("rack-id").focus();
   } catch (e) {
     status.textContent = "Could not read this photo (" + (e && e.message ? e.message : e) + ").";
   } finally { plateBusy = false; }
@@ -1726,19 +2489,112 @@ for (const id of ["shot", "pick"]) $(id).addEventListener("change", ev => {
 });
 $("btn-turn").onclick = () => {
   plateTurn = ((plateGrid.turn || 0) + 1) % 4;
-  plateGrid = assignGrid(plateList, plateTurn);
+  turnLocked = true;
+  plateGrid = gridOf(plateTurn);
+  pickRack();
   selWell = null; $("well-detail").textContent = "Tap a well to see its number.";
   renderPlate();
 };
 $("order").onchange = renderPlate;
+$("bottom-view").onchange = () => {
+  if (!plateList) return;
+  if (dirFromRack) plateTurn = undefined;        // the rack barcode will choose the direction again
+  plateGrid = gridOf(plateTurn);
+  pickRack();
+  selWell = null; $("well-detail").textContent = "Tap a well to see its number.";
+  renderPlate();
+};
 $("btn-plate-copy").onclick = async () => {
-  const text = plateTable().list.map(w => w.well + "\t" + w.number).join("\n");
+  const text = "Rack\t" + $("rack-id").value.trim() + "\n" + plateTable().list.map(w => w.well + "\t" + w.number).join("\n");
   try { await navigator.clipboard.writeText(text); $("btn-plate-copy").textContent = "Copied"; }
   catch (e) { $("btn-plate-copy").textContent = "Copy failed"; }
   setTimeout(() => { $("btn-plate-copy").textContent = "Copy all"; }, 1200);
 };
+/* ---- inventory: which tubes are in which rack, kept on this device ---- */
+const INV_KEY = "colorcode-racks";
+function loadInv() { try { return JSON.parse(localStorage.getItem(INV_KEY) || "[]"); } catch (e) { return []; } }
+function storeInv(inv) { try { localStorage.setItem(INV_KEY, JSON.stringify(inv)); return true; } catch (e) { return false; } }
+const WELL_ORDER = [];
+for (let r = 0; r < 8; r++) for (let c = 1; c <= 12; c++) WELL_ORDER.push("ABCDEFGH"[r] + c);
+const wellSort = (a, b) => (WELL_ORDER.indexOf(a) + 1 || 999) - (WELL_ORDER.indexOf(b) + 1 || 999);
+function saveRack() {
+  const id = $("rack-id").value.trim(), out = $("save-msg");
+  if (!id) { out.textContent = "Type the rack ID first."; $("rack-id").focus(); return; }
+  const wells = {};
+  for (const w of plateTable().list) if (w.number) wells[w.well] = w.number;
+  const inv = loadInv(), old = inv.find(r => r.rack === id);
+  // a tube can only be in one place: take it out of any other rack it was recorded in
+  const here = new Set(Object.values(wells));
+  let moved = 0;
+  for (const r of inv) if (r.rack !== id) for (const [w, tube] of Object.entries(r.wells)) if (here.has(tube)) { delete r.wells[w]; moved++; }
+  const rec = { rack: id, time: new Date().toISOString(), wells };
+  if (old) inv.splice(inv.indexOf(old), 1);
+  inv.unshift(rec);
+  if (!storeInv(inv)) { out.textContent = "Could not save: this browser is not keeping data for this page. Use Save plate (CSV) instead."; return; }
+  const n = Object.keys(wells).length;
+  out.textContent = "Saved rack " + id + " with " + n + " tube" + (n === 1 ? "" : "s") + "." +
+    (old ? " Replaced the scan from " + new Date(old.time).toLocaleString() + "." : "") +
+    (moved ? " " + moved + " of these tube" + (moved === 1 ? " was" : "s were") + " recorded in another rack and " + (moved === 1 ? "has" : "have") + " been moved here." : "");
+  renderInv();
+}
+$("btn-save-rack").onclick = saveRack;
+let invOpen = null;
+function renderInv() {
+  const inv = loadInv(), tb = $("inv-rows");
+  $("inv-empty").style.display = inv.length ? "none" : "";
+  $("inv-wrap").style.display = $("inv-actions").style.display = inv.length ? "" : "none";
+  tb.innerHTML = "";
+  for (const r of inv) {
+    const tr = document.createElement("tr"), n = Object.keys(r.wells).length;
+    for (const v of [r.rack, new Date(r.time).toLocaleString(), n]) { const td = document.createElement("td"); td.textContent = v; tr.appendChild(td); }
+    const td = document.createElement("td"), show = document.createElement("button"), del = document.createElement("button");
+    show.type = del.type = "button"; show.className = del.className = "ghost";
+    show.textContent = invOpen === r.rack ? "Hide" : "Show"; del.textContent = "Delete";
+    show.onclick = () => { invOpen = invOpen === r.rack ? null : r.rack; renderInv(); };
+    del.onclick = () => {
+      if (!confirm("Delete rack " + r.rack + " and its " + n + " tubes from this device?")) return;
+      storeInv(loadInv().filter(x => x.rack !== r.rack)); renderInv();
+    };
+    td.append(show, " ", del); tr.appendChild(td); tb.appendChild(tr);
+    if (invOpen === r.rack) {
+      const d = document.createElement("tr"), c = document.createElement("td");
+      d.className = "detail"; c.colSpan = 4;
+      c.textContent = Object.keys(r.wells).sort(wellSort).map(w => w + " " + r.wells[w]).join("   ") || "No tubes.";
+      d.appendChild(c); tb.appendChild(d);
+    }
+  }
+}
+$("find-tube").addEventListener("input", () => {
+  const q = $("find-tube").value.trim(), out = $("find-result");
+  if (!q) { out.textContent = ""; return; }
+  const hits = [];
+  for (const r of loadInv()) for (const [w, tube] of Object.entries(r.wells)) if (tube === q || (q.length >= 4 && tube.includes(q))) hits.push(tube + ": rack " + r.rack + ", well " + w + " (scanned " + new Date(r.time).toLocaleDateString() + ")");
+  out.textContent = hits.length ? hits.slice(0, 20).join("  ·  ") + (hits.length > 20 ? "  ·  and " + (hits.length - 20) + " more" : "") : "Not in any saved rack.";
+});
+function inventoryRows() {
+  const rows = [];
+  for (const r of loadInv()) for (const w of Object.keys(r.wells).sort(wellSort)) rows.push([r.rack, w, r.wells[w], r.time]);
+  return rows;
+}
+$("btn-inv-csv").onclick = () => {
+  const q = v => '"' + String(v).replace(/"/g, '""') + '"';
+  const csv = "rack_id,well,tube_id,scanned\r\n" + inventoryRows().map(([r, w, tube, time]) => [q(r), w, '="' + tube + '"', time].join(",")).join("\r\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+  a.download = "colorcode_racks.csv";
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+};
+$("btn-inv-copy").onclick = async () => {
+  const text = "Rack\tWell\tTube\tScanned\n" + inventoryRows().map(r => r.join("\t")).join("\n");
+  try { await navigator.clipboard.writeText(text); $("btn-inv-copy").textContent = "Copied"; }
+  catch (e) { $("btn-inv-copy").textContent = "Copy failed"; }
+  setTimeout(() => { $("btn-inv-copy").textContent = "Copy all racks"; }, 1200);
+};
+renderInv();
 $("btn-plate-csv").onclick = () => {
-  const csv = "well,number,result\r\n" + plateTable().list.map(w => [w.well, w.number ? '="' + w.number + '"' : "", '"' + w.text + '"'].join(",")).join("\r\n");
+  const rid = $("rack-id").value.trim(), q = v => '"' + String(v).replace(/"/g, '""') + '"';
+  const csv = "rack_id,well,number,result\r\n" + plateTable().list.map(w => [q(rid), w.well, w.number ? '="' + w.number + '"' : "", q(w.text)].join(",")).join("\r\n");
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
   a.download = "colorcode_plate.csv";
@@ -1754,7 +2610,7 @@ $("btn-plate-csv").onclick = () => {
   navigator.serviceWorker.register("sw.js").then(function () {
     return navigator.serviceWorker.ready;
   }).then(function () {
-    note.textContent = "Saved on this phone. It will open without a signal. Version 3.";
+    note.textContent = "Saved on this phone. It will open without a signal. Version 9.";
   }).catch(function () {
     note.textContent = "Could not save a copy for offline use; it still works while online.";
   });

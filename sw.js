@@ -1,6 +1,6 @@
 /* Colorcode Reader: offline copy.
    Change VERSION whenever index.html is replaced, so phones pick up the new page. */
-const VERSION = "colorcode-reader-2ring-3";
+const VERSION = "colorcode-reader-2ring-9";
 const FILES = ["./", "index.html", "manifest.webmanifest", "icon-180.png", "icon-512.png"];
 
 self.addEventListener("install", event => {
