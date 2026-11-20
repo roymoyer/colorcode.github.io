@@ -1,7 +1,7 @@
 /* Colorcode Reader: offline copy.
    Change VERSION whenever index.html is replaced, so phones pick up the new page. */
-const VERSION = "colorcode-reader-2ring-9";
-const FILES = ["./", "index.html", "manifest.webmanifest", "icon-180.png", "icon-512.png"];
+const VERSION = "colorcode-reader-2ring-20";
+const FILES = ["./", "index.html", "manifest.webmanifest", "icon-180.png", "icon-512.png", "rack_settings.json"];
 
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(VERSION).then(cache => cache.addAll(FILES)).then(() => self.skipWaiting()));

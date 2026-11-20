@@ -114,20 +114,34 @@ td.none { color: var(--muted); }
   <div class="adjust" role="group" aria-label="Picture adjustments">
     <label for="bright">Brightness</label><input id="bright" type="range" min="-100" max="100" step="5" value="0"><output id="bright-val" for="bright">0</output>
     <label for="contrast">Contrast</label><input id="contrast" type="range" min="-100" max="100" step="5" value="0"><output id="contrast-val" for="contrast">0</output>
+    <label for="sharp">Sharpness</label><input id="sharp" type="range" min="-100" max="100" step="5" value="0"><output id="sharp-val" for="sharp">0</output>
     <div class="foot">
-      <span class="msg">Applied to everything the reader looks at: the camera picture and plate photos.</span>
+      <span class="msg">Applied to everything the reader looks at: the camera picture and plate photos. Sharpness below 0 softens.</span>
+      <span class="msg">Auto tune adjusts:</span>
+      <label class="check" for="tune-bright"><input id="tune-bright" type="checkbox" checked> Brightness</label>
+      <label class="check" for="tune-contrast"><input id="tune-contrast" type="checkbox" checked> Contrast</label>
+      <label class="check" for="tune-sharp"><input id="tune-sharp" type="checkbox" checked> Sharpness</label>
       <button id="btn-adjust-reset" class="ghost" type="button">Reset</button>
     </div>
   </div>
   <div class="adjust" id="camctl" role="group" aria-label="Camera settings" style="display:none">
     <h3>Camera</h3>
     <label for="focus" class="fo">Focus</label><input id="focus" class="fo" type="range"><output id="focus-val" class="fo" for="focus"></output>
+    <label for="csharp" class="cs">Camera sharpness</label><input id="csharp" class="cs" type="range"><output id="csharp-val" class="cs" for="csharp"></output>
     <label for="expo" class="ex">Exposure</label><input id="expo" class="ex" type="range" min="0" max="100" step="1"><output id="expo-val" class="ex" for="expo"></output>
     <div class="foot">
       <label class="check fo" for="focus-auto"><input id="focus-auto" type="checkbox"> Auto focus</label>
       <label class="check ex" for="expo-auto"><input id="expo-auto" type="checkbox"> Auto exposure</label>
       <label class="check" for="use-photo" id="use-photo-row" style="display:none"><input id="use-photo" type="checkbox"> <span id="use-photo-text">Capture at full photo resolution</span></label>
-      <button id="btn-tune" type="button">Tune focus and exposure</button>
+      <label class="check fo" for="focus-lo">Focus range
+        <input id="focus-lo" type="number" step="1" value="100" inputmode="numeric" style="width:72px;height:36px;font:inherit;text-align:center;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink)"> to
+        <input id="focus-hi" type="number" step="1" value="150" inputmode="numeric" style="width:72px;height:36px;font:inherit;text-align:center;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink)"></label>
+      <span class="msg">Auto tune adjusts:</span>
+      <label class="check fo" for="tune-focus"><input id="tune-focus" type="checkbox" checked> Focus</label>
+      <label class="check ex" for="tune-expo"><input id="tune-expo" type="checkbox" checked> Exposure</label>
+      <label class="check cs" for="tune-csharp"><input id="tune-csharp" type="checkbox" checked> Camera sharpness</label>
+      <span class="msg">(and brightness, contrast and sharpness, as ticked above)</span>
+      <button id="btn-tune" type="button">Auto tune: focus, exposure, sharpness, brightness, contrast</button>
     </div>
     <p id="tune-msg" class="msg wide" aria-live="polite"></p>
   </div>
@@ -170,11 +184,36 @@ td.none { color: var(--muted); }
       <label class="filebtn grow">Take plate photo<input id="shot" type="file" accept="image/*" capture="environment"></label>
       <label class="filebtn ghost grow">Choose a photo<input id="pick" type="file" accept="image/*"></label>
     </div>
-    <label class="check" for="bottom-view"><input id="bottom-view" type="checkbox" checked> Photo is of the rack's underside (A1 at top right)</label>
+    <div class="rackbox" id="typebox">
+      <label for="rack-type">Rack type</label>
+      <select id="rack-type" aria-label="Rack type"><option value="auto">Work it out from the barcodes</option></select>
+      <p id="type-msg" class="msg"></p>
+      <details id="type-settings">
+        <summary>Rack type settings</summary>
+        <p class="msg">Each rack type keeps its own brightness, contrast and camera settings. Auto tune saves to the rack type it sees. The settings live on this device; Download settings file saves them as rack_settings.json, which can be put next to index.html on the site so every device starts with them.</p>
+        <div class="logwrap" style="max-height:40vh">
+          <table>
+            <thead><tr><th>Type</th><th>Tube IDs</th><th>Rack ID</th><th>Bright.</th><th>Contr.</th><th>Sharp.</th><th>Camera</th><th>Tuned</th></tr></thead>
+            <tbody id="type-rows"></tbody>
+          </table>
+        </div>
+        <div class="row"><button id="btn-type-save" class="ghost grow" type="button">Save the current brightness, contrast and sharpness to the chosen rack type</button></div>
+        <div class="row">
+          <button id="btn-type-download" class="ghost grow" type="button">Download settings file</button>
+          <label class="filebtn ghost grow">Load settings file<input id="type-load" type="file" accept=".json,application/json"></label>
+          <button id="btn-type-reset" class="ghost grow" type="button">Go back to the site's file</button>
+        </div>
+        <p id="type-file-msg" class="msg" aria-live="polite"></p>
+      </details>
+    </div>
+    <label class="check" for="bottom-view"><input id="bottom-view" type="checkbox" checked> Photo is of the rack's underside (only used when no rack barcode is found)</label>
+    <label class="check" for="rot-retry"><input id="rot-retry" type="checkbox" checked> Retry unread matrix codes turned 10°, 20° … 80°</label>
+    <label class="check" for="sharp-retry"><input id="sharp-retry" type="checkbox" checked> Then retry them sharper and softer (+1, −1, +2, −2, +3, −3)</label>
     <label class="check" for="retries">Retry unread labels up to brightness ± (0 to 9)
       <input id="retries" type="number" min="0" max="9" step="1" value="5" inputmode="numeric" style="width:64px;height:40px;font:inherit;text-align:center;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink)">
     </label>
     <div class="row"><button id="btn-reread" class="ghost grow" type="button" style="display:none">Read this photo again with the new brightness and contrast</button></div>
+    <div class="row"><button id="btn-photo-tune" class="ghost grow" type="button" style="display:none">Auto tune this photo: brightness, contrast and sharpness, then read it again</button></div>
     <p id="plate-status" class="msg" aria-live="polite"></p>
     <canvas id="photo" hidden></canvas>
     <div id="plate-results" hidden style="display:none">
@@ -184,6 +223,7 @@ td.none { color: var(--muted); }
         <p id="rack-src" class="msg"></p>
       </div>
       <div id="summary"></div>
+      <label class="check" for="zoom-rack"><input id="zoom-rack" type="checkbox" checked> Zoom in on the rack and show the 8 × 12 grid</label>
       <p id="plate-note" class="msg"></p>
       <div id="map" aria-label="Plate map"></div>
       <div class="key"><span><i style="background:var(--good)"></i>Read</span><span><i style="background:var(--warn)"></i>Read, check it</span><span><i style="background:var(--bad)"></i>Label not readable</span><span><i></i>Nothing found</span></div>
@@ -922,7 +962,7 @@ function attemptAt(img, cx, cy, M, ratio) {
   return out;
 }
 /* The ring tells us where the Data Matrix must be and what it must contain.
-   Sample its 196 modules and report the best fraction that agree (0..1). */
+   Sample its modules and report the best fraction that agree (0..1), black-on-white or white-on-black. */
 function checkMatrix(img, hit, smp) {
   const want = DM.encode(hit.digits), N = want.length, W = img.width, d = img.data, M = hit.M;
   const [gl, gh] = smp.ng, [bl, bh] = smp.nb;
@@ -941,6 +981,7 @@ function checkMatrix(img, hit, smp) {
           const lum = ((d[o + 1] - gl) / (gh - gl) + (d[o + 2] - bl) / (bh - bl)) / 2;
           if ((lum < 0.5 ? 1 : 0) === want[r][q]) ok++;
         }
+        ok = Math.max(ok, N * N - ok);                // white-on-black codes count too
         if (ok > best) { best = ok; bestTurn = turn; }
       }
   return { frac: best / (N * N), turn: bestTurn };
@@ -950,6 +991,30 @@ const NUDGE = [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]];
    track: the last hit, tried first because the label rarely moves far between frames.
    Returns {status: "read" | "found" | "none", ...}; a "read" also carries `trusted`. */
 let scanTurn = 0;
+/* Quick look for color rings before any decoding: on a coarse sample of the picture (about 40 000
+   points), count strongly colored pixels in the three ring inks: blue, green and reddish orange. A
+   rack of ring labels is full of all three; a rack of plain matrix codes, its beige frame, black tube
+   bottoms and a stray label or two are not. Returns { rings, blue, green, orange } (fractions). */
+function colorRingsPresent(img) {
+  const w = img.width, h = img.height, d = img.data, step = Math.max(1, Math.round(Math.sqrt(w * h / 40000)));
+  let n = 0, B = 0, G = 0, O = 0;
+  for (let y = 0; y < h; y += step) for (let x = 0; x < w; x += step) {
+    const i = (y * w + x) * 4, r = d[i], g = d[i + 1], b = d[i + 2];
+    n++;
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+    if (mx < 60 || (mx - mn) < 0.5 * mx) continue;            // dark or greyish: not ring ink
+    let hue;
+    if (mx === r) hue = (60 * (g - b) / (mx - mn) + 360) % 360;
+    else if (mx === g) hue = 60 * (b - r) / (mx - mn) + 120;
+    else hue = 60 * (r - g) / (mx - mn) + 240;
+    if (hue >= 190 && hue <= 260) B++;
+    else if (hue >= 85 && hue <= 170) G++;
+    else if (hue <= 28 || hue >= 345) O++;
+  }
+  const blue = B / n, green = G / n, orange = O / n;
+  return { rings: blue + green + orange >= 0.012 && blue >= 0.002 && green >= 0.002 && orange >= 0.002, blue, green, orange };
+}
+let liveRings = null;
 function scanFrame(img, track, budgetMs) {
   const started = Date.now(), over = () => budgetMs && Date.now() - started > budgetMs;
   let best = null;
@@ -1096,8 +1161,17 @@ function combineQuadCodes(codes, opts) {
     const along = Math.abs(dx * ux + dy * uy), across = Math.abs(-dx * uy + dy * ux), big = Math.max(along, across);
     return Math.min(along, across) < 0.25 * big || Math.abs(along - across) < 0.25 * big;
   };
+  // Labels stuck on straight (or a printed sheet) also line up with their neighbors, so a code's own
+  // quarters are told apart by distance: they are the nearest ones (side by side, or 1.41 times that on
+  // the diagonal), while the next label's quarters are farther. Link two codes only when each is within
+  // 1.6 times its nearest mate's distance.
+  const near = info.map(() => Infinity), pairs = [];
   for (let i = 0; i < info.length; i++) for (let j = i + 1; j < info.length; j++)
-    if (mates(info[i], info[j])) parent[find(i)] = find(j);
+    if (mates(info[i], info[j])) {
+      const d = Math.hypot(info[i].cx - info[j].cx, info[i].cy - info[j].cy);
+      pairs.push([i, j, d]); near[i] = Math.min(near[i], d); near[j] = Math.min(near[j], d);
+    }
+  for (const [i, j, d] of pairs) if (d <= 1.6 * Math.min(near[i], near[j])) parent[find(i)] = find(j);
   const groups = new Map();
   info.forEach((q, i) => { const r = find(i); if (!groups.has(r)) groups.set(r, []); groups.get(r).push(q); });
   // A photo shows four-code labels if at least one group of three or four codes has matching
@@ -1107,7 +1181,14 @@ function combineQuadCodes(codes, opts) {
     const t = g.map(q => q.c.text), u = new Set(t);
     return u.size === 2 && t.length > u.size;          // two halves, at least one of them seen twice
   };
-  const grouped = [...groups.values()].some(g => g.length >= 3 && g.length <= 4 && settled(g)) || (!opts.plate && [...groups.values()].some(g => g.length >= 2 && g.length <= 4));
+  // Two equal codes, same size and way up, set diagonally: the two copies of one half of a
+  // four-code label whose other half could not be read. Also proof of four-code labels, so the
+  // half is never taken for a whole tube ID.
+  const twin = g => g.length === 2 && g[0].c.text === g[1].c.text && (() => {
+    const dx = g[1].cx - g[0].cx, dy = g[1].cy - g[0].cy, along = Math.abs(dx * g[0].ux + dy * g[0].uy), across = Math.abs(-dx * g[0].uy + dy * g[0].ux);
+    return Math.abs(along - across) < 0.25 * Math.max(along, across);
+  })();
+  const grouped = [...groups.values()].some(g => (g.length >= 3 && g.length <= 4 && settled(g)) || twin(g)) || (!opts.plate && [...groups.values()].some(g => g.length >= 2 && g.length <= 4));
   for (const g of groups.values()) {
     if (g.length > 4 || !grouped) { for (const q of g) out.push(q.c); continue; }
     if (g.length === 1) { const q = g[0]; out.push({ partial: true, cx: q.cx, cy: q.cy, half: q.half, parts: [{ text: q.c.text, cx: q.cx, cy: q.cy }] }); continue; }
@@ -1142,17 +1223,39 @@ function combineQuadCodes(codes, opts) {
 /* ---------- rack ID barcode ---------- */
 /* The rack carries its own barcode just beside A1. Before the wells are worked out, set aside any
    code that cannot be a tube: anything that is not a Data Matrix code (a linear rack barcode), and
-   Data Matrix codes much bigger or smaller than the tube codes. Returns {tubes, cands}. */
+   Data Matrix codes much bigger or smaller than the tube codes, or off the tubes' grid. Returns {tubes, cands}. */
 function splitRackCandidates(codes) {
   const tubes = [], cands = [];
   const size = c => c.corners ? Math.hypot(c.corners[0][0] - c.corners[2][0], c.corners[0][1] - c.corners[2][1]) : 0;
   const dm = codes.filter(c => !c.partial && (!c.format || c.format === "DataMatrix"));
   const sizes = dm.map(size).sort((a, b) => a - b), med = sizes[sizes.length >> 1] || 0;
+  // A rack code the same size as the tube codes is caught by where it sits: the tubes stand on a
+  // regular grid, and the rack barcode sits off it (between wells or half a well outside them).
+  const offLattice = new Set();
+  if (dm.length >= 12) {
+    const near = dm.map(c => { let b = Infinity; for (const o of dm) if (o !== c) b = Math.min(b, Math.hypot(o.cx - c.cx, o.cy - c.cy)); return b; });
+    const pitch = near.slice().sort((a, b) => a - b)[near.length >> 1];
+    let sx = 0, sy = 0;                                    // grid direction from the nearest-neighbour steps (mod 90°)
+    dm.forEach((c, i) => { for (const o of dm) if (o !== c && Math.hypot(o.cx - c.cx, o.cy - c.cy) < pitch * 1.3) { const a = 4 * Math.atan2(o.cy - c.cy, o.cx - c.cx); sx += Math.cos(a); sy += Math.sin(a); } });
+    const th = Math.atan2(sy, sx) / 4, ux = Math.cos(th), uy = Math.sin(th);
+    for (const c of dm) {
+      let close = 0, onGrid = 0;
+      for (const o of dm) {
+        if (o === c) continue;
+        const dx = o.cx - c.cx, dy = o.cy - c.cy;
+        if (Math.hypot(dx, dy) > pitch * 2.2) continue;
+        close++;
+        const a = (dx * ux + dy * uy) / pitch, b = (-dx * uy + dy * ux) / pitch;
+        if (Math.abs(a - Math.round(a)) < 0.25 && Math.abs(b - Math.round(b)) < 0.25) onGrid++;
+      }
+      if (close >= 2 && onGrid === 0) offLattice.add(c);
+    }
+  }
   for (const c of codes) {
     if (c.partial) { tubes.push(c); continue; }
     const other = c.format && c.format !== "DataMatrix";
     const odd = dm.length >= 12 && med > 0 && (size(c) > med * 1.6 || size(c) < med * 0.6);
-    (other || odd ? cands : tubes).push(c);
+    (other || odd || offLattice.has(c) ? cands : tubes).push(c);
   }
   return { tubes, cands: cands.map(c => ({ text: c.text, format: c.format || "DataMatrix", cx: c.cx, cy: c.cy, corners: c.corners })) };
 }
@@ -1193,8 +1296,12 @@ function oversizeStrays(grid) {
   if (grid.rows > 8) lines.push(c => c.row === 0, c => c.row === grid.rows - 1);
   if (grid.cols > 12) lines.push(c => c.col === 0, c => c.col === grid.cols - 1);
   let best = null;
-  for (const f of lines) { const on = grid.cells.filter(f); if (!best || on.length < best.length) best = on; }
-  return best && best.length && best.length <= 2 ? best.map(c => c.node) : [];
+  // count only labels that were read: an edge line may also hold unread spots (empty wells)
+  for (const f of lines) {
+    const on = grid.cells.filter(c => f(c) && c.node), n = on.filter(c => c.node.read).length;
+    if (!best || n < best.n) best = { on, n };
+  }
+  return best && best.n >= 1 && best.n <= 2 ? best.on.map(c => c.node) : [];
 }
 /* Fold independently decoded Data Matrix codes into the list of labels.
    codes: [{text, corners: [[x, y] x 4]}] with corners in the order top-left, top-right,
@@ -1237,13 +1344,15 @@ function mergeMatrixCodes(list, codes) {
       if (Math.hypot(list[i].cx - cx, list[i].cy - cy) < Math.max(labelSize(list[i]) * 0.5, half)) { at = i; break; }
     if (at >= 0 && list[at].read) {
       const l = list[at];
+      // one quarter of a four-code label is half the ID: that agrees with the rings
+      if (c.text !== l.digits && c.text.length <= 6 && quadHalves(l.digits).includes(c.text)) { l.quarterMatch = true; continue; }
       l.matrixText = c.text;
       if (c.text === l.digits) l.matrix = 1; else l.matrixMismatch = true;
       continue;
     }
     const size = half * 1.3;
-    const node = { read: true, trusted: true, matrixOnly: true, goodCopies: 0, digits: c.text, number: c.text,
-                   matrixText: c.text, matrix: 1, cx, cy, M: [size, 0, 0, size], ratio: 0.7, alpha: up, up };
+    const node = { read: true, trusted: true, matrixOnly: true, goodCopies: 0, digits: c.text, number: c.text, retryAngle: c.retryAngle, retrySharp: c.retrySharp,
+                   matrixText: c.text, matrix: 1, quad: !!c.quad, cx, cy, M: [size, 0, 0, size], ratio: 0.7, alpha: up, up };
     if (at >= 0) list[at] = node; else list.push(node);
     added++;
   }
@@ -1257,7 +1366,21 @@ function ringsAtCodes(img, list, codes) {
   return codes.filter(c => !c.partial).map(c => () => {
     const k = c.corners, cx = (k[0][0] + k[1][0] + k[2][0] + k[3][0]) / 4, cy = (k[0][1] + k[1][1] + k[2][1] + k[3][1]) / 4;
     const half = Math.hypot(k[0][0] - k[2][0], k[0][1] - k[2][1]) / 2;
-    const r = readLabelAt(img, cx, cy, f, half * 3.2);
+    let r = readLabelAt(img, cx, cy, f, half * 3.2);
+    if (!(r && r.read) && /^[0-9A-Z]{1,6}$/.test(c.text)) {
+      // a short code may be one quarter of a four-code label: the label's center is then
+      // diagonally off the code, toward the open middle, in one of four directions
+      const side = Math.hypot(k[1][0] - k[0][0], k[1][1] - k[0][1]), rx = (k[1][0] - k[0][0]) / side, ry = (k[1][1] - k[0][1]) / side;
+      const ux = (k[0][0] - k[3][0]) / side, uy = (k[0][1] - k[3][1]) / side;
+      // 0.83 code widths for black-on-white codes; white-on-black codes sit inside a black square
+      // one module wider on each side, so the center is a little farther away
+      found: for (const d of [side * 0.83, side * 1.02])
+        for (const [a, b] of [[1, -1], [-1, -1], [1, 1], [-1, 1]]) {
+          r = readLabelAt(img, cx + d * (a * rx + b * ux), cy + d * (a * ry + b * uy), f, half * 5.5);
+          if (r && r.read && quadHalves(r.digits).includes(c.text)) break found;
+          r = null;
+        }
+    }
     if (r && r.read) addLabel(list, r);
   });
 }
@@ -1558,15 +1681,143 @@ async function readPlateCodes(img) {
     }
     await pause();
   }
+  for (const c of await etchedCodes(img, all)) all.push(c);
+  const out = combineQuadCodes(all, { plate: true });
+  out.raw = all;                         // every code as decoded, for the split-label pass
+  return out;
+}
+/* Split (four-code) labels: each quarter code is small, so the photo is decoded again in four
+   overlapping parts at twice the size, and the halves found are paired into whole IDs. */
+async function splitCodes(img, raw) {
+  const all = (raw || []).slice(), w = img.width, h = img.height, tw = Math.ceil(w * 0.56), th = Math.ceil(h * 0.56);
+  const src = document.createElement("canvas"), out = document.createElement("canvas");
+  src.width = tw; src.height = th; out.width = tw * 2; out.height = th * 2;
+  const sx = src.getContext("2d"), ox = out.getContext("2d", { willReadFrequently: true });
+  ox.imageSmoothingQuality = "high";
+  for (const [x0, y0] of [[0, 0], [w - tw, 0], [0, h - th], [w - tw, h - th]]) {
+    const part = new ImageData(tw, th);
+    for (let r = 0; r < th; r++) part.data.set(img.data.subarray(((y0 + r) * w + x0) * 4, ((y0 + r) * w + x0 + tw) * 4), r * tw * 4);
+    sx.putImageData(part, 0, 0);
+    ox.drawImage(src, 0, 0, tw * 2, th * 2);
+    for (const c of await rawMatrixCodes(ox.getImageData(0, 0, tw * 2, th * 2), 255)) {
+      c.cx = c.cx / 2 + x0; c.cy = c.cy / 2 + y0; for (const p of c.corners) { p[0] = p[0] / 2 + x0; p[1] = p[1] / 2 + y0; }
+      all.push(c);
+    }
+    await pause();
+  }
   return combineQuadCodes(all, { plate: true });
+}
+/* Laser-etched tube codes (white dots on a black tube bottom) often defeat the decoder as photographed:
+   the dots bloom into each other and the finder edges blur. Each bright spot the size of a tube code
+   that has not been read is cut out and cleaned up: the white is thinned a little (each pixel takes the
+   darkest value around it) and then split into pure black and white. On real rack photos this took
+   the read rate from about 3 in 96 to over 80 in 96. Returns codes in photo coordinates. */
+async function etchedCodes(img, known) {
+  const w = img.width, h = img.height, d = img.data;
+  // 1. find bright blobs on a reduced picture (about 1000 px across)
+  const k = Math.max(1, Math.round(Math.max(w, h) / 1000)), sw = Math.floor(w / k), sh = Math.floor(h / k);
+  const g = new Float32Array(sw * sh);
+  for (let y = 0; y < sh; y++) for (let x = 0; x < sw; x++) {
+    let s = 0;
+    for (let j = 0; j < k; j++) for (let i = 0; i < k; i++) s += d[((y * k + j) * w + x * k + i) * 4 + 1];
+    g[y * sw + x] = s / (k * k);
+  }
+  const hist = new Uint32Array(256);
+  for (let i = 0; i < g.length; i++) hist[g[i] | 0]++;
+  let cut = 255;
+  for (let acc = 0; cut > 0 && (acc += hist[cut]) < g.length * 0.1; cut--);
+  let m = new Uint8Array(sw * sh);
+  for (let i = 0; i < g.length; i++) m[i] = g[i] > cut ? 1 : 0;
+  const r = Math.max(1, Math.round(4 / k));        // close the gaps between the dots
+  const pass = (src, grow) => {
+    const a = new Uint8Array(sw * sh), b = new Uint8Array(sw * sh);
+    for (let y = 0; y < sh; y++) { let run = 0; for (let x = 0; x < sw; x++) { /* horizontal */
+      let v = grow ? 0 : 1;
+      for (let i = Math.max(0, x - r); i <= Math.min(sw - 1, x + r); i++) { const q = src[y * sw + i]; if (grow ? q : !q) { v = grow ? 1 : 0; break; } }
+      a[y * sw + x] = v; } }
+    for (let x = 0; x < sw; x++) for (let y = 0; y < sh; y++) {
+      let v = grow ? 0 : 1;
+      for (let j = Math.max(0, y - r); j <= Math.min(sh - 1, y + r); j++) { const q = a[j * sw + x]; if (grow ? q : !q) { v = grow ? 1 : 0; break; } }
+      b[y * sw + x] = v;
+    }
+    return b;
+  };
+  m = pass(pass(m, true), false);
+  const lab = new Int32Array(sw * sh), blobs = [], stack = [];
+  for (let i0 = 0; i0 < m.length; i0++) {
+    if (!m[i0] || lab[i0]) continue;
+    let x1 = sw, y1 = sh, x2 = 0, y2 = 0, area = 0;
+    lab[i0] = blobs.length + 1; stack.push(i0);
+    while (stack.length) {
+      const i = stack.pop(), x = i % sw, y = (i / sw) | 0;
+      area++; if (x < x1) x1 = x; if (x > x2) x2 = x; if (y < y1) y1 = y; if (y > y2) y2 = y;
+      for (const n of [i - 1, i + 1, i - sw, i + sw]) {
+        if (n < 0 || n >= m.length || lab[n] || !m[n] || (Math.abs(n - i) === 1 && ((n / sw) | 0) !== y)) continue;
+        lab[n] = blobs.length + 1; stack.push(n);
+      }
+    }
+    const bw = (x2 - x1 + 1) * k, bh = (y2 - y1 + 1) * k;
+    blobs.push({ cx: (x1 + x2 + 1) * k / 2, cy: (y1 + y2 + 1) * k / 2, s: Math.max(bw, bh), ok: bw > 25 && bh > 25 && bw < w / 6 && bh < h / 4 && bh / bw > 0.6 && bh / bw < 1.6 && area * k * k > 0.35 * bw * bh });
+  }
+  const cands = blobs.filter(b => b.ok);
+  if (cands.length > 400) return [];
+  const sizes = cands.map(b => b.s).sort((a, b) => a - b), med = sizes[sizes.length >> 1] || 0;
+  // 2. clean up and decode each spot that no code covers yet
+  const out = [];
+  const covered = b => known.concat(out).some(c => Math.hypot(c.cx - b.cx, c.cy - b.cy) < b.s * 0.5);
+  for (const b of cands) {
+    if (b.s < med * 0.5 || covered(b)) continue;
+    const half = Math.round(b.s * 0.95), size = 2 * half, x0 = Math.round(b.cx) - half, y0 = Math.round(b.cy) - half;
+    const cg = new Float32Array(size * size);
+    for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+      const px = Math.min(w - 1, Math.max(0, x0 + x)), py = Math.min(h - 1, Math.max(0, y0 + y)), o = (py * w + px) * 4;
+      cg[y * size + x] = (d[o] + d[o + 1] * 2 + d[o + 2]) / 4;
+    }
+    const er = new Float32Array(size * size);              // darkest value in each 3 x 3
+    for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+      let v = 255;
+      for (let j = Math.max(0, y - 1); j <= Math.min(size - 1, y + 1); j++) for (let i = Math.max(0, x - 1); i <= Math.min(size - 1, x + 1); i++) if (cg[j * size + i] < v) v = cg[j * size + i];
+      er[y * size + x] = v;
+    }
+    const range = a => { let lo = 255, hi = 0; for (const v of a) { if (v < lo) lo = v; if (v > hi) hi = v; } return [lo, hi]; };
+    const toImg = (a, q) => {
+      const [lo, hi] = range(a), t = q == null ? null : lo + q * (hi - lo), im = new ImageData(size, size);
+      for (let i = 0; i < a.length; i++) { const v = t == null ? a[i] : a[i] > t ? 255 : 0; im.data[i * 4] = im.data[i * 4 + 1] = im.data[i * 4 + 2] = v; im.data[i * 4 + 3] = 255; }
+      return im;
+    };
+    // straight first; then the same clean-ups turned 15° either way (the decoder already tries quarter turns)
+    const tries = [[er, 0.6, 0], [cg, 0.75, 0], [er, 0.7, 0], [er, null, 0], [cg, 0.65, 0], [cg, 0.8, 0]];
+    for (const deg of [15, -15]) for (const [a, q] of [[er, 0.7], [cg, 0.8], [er, 0.6]]) tries.push([a, q, deg]);
+    for (const [a, q, deg] of tries) {
+      let pic = toImg(a, q), th = 0;
+      if (deg) {
+        th = deg * Math.PI / 180;
+        const src = document.createElement("canvas"); src.width = src.height = size; src.getContext("2d").putImageData(pic, 0, 0);
+        const cv = document.createElement("canvas"); cv.width = cv.height = size;
+        const o = cv.getContext("2d", { willReadFrequently: true });
+        o.fillStyle = "#000"; o.fillRect(0, 0, size, size);
+        o.translate(half, half); o.rotate(th); o.drawImage(src, -half, -half);
+        pic = o.getImageData(0, 0, size, size);
+      }
+      const found = (await rawMatrixCodes(pic, 4)).filter(c => Math.hypot(c.cx - half, c.cy - half) < half * 0.7);
+      if (!found.length) continue;
+      const c = found[0], cs = Math.cos(th), sn = Math.sin(th);
+      c.corners = c.corners.map(p => { const vx = p[0] - half, vy = p[1] - half; return [x0 + half + cs * vx + sn * vy, y0 + half - sn * vx + cs * vy]; });
+      c.cx = c.corners.reduce((t, p) => t + p[0], 0) / 4; c.cy = c.corners.reduce((t, p) => t + p[1], 0) / 4;
+      c.etched = true;
+      out.push(c);
+      break;
+    }
+  }
+  return out;
 }
 
 /* ---- brightness and contrast: applied to the camera picture and to plate photos ---- */
-const adjust = { b: 0, c: 0 };
-try { const saved = JSON.parse(localStorage.getItem("colorcode-adjust") || "{}"); adjust.b = +saved.b || 0; adjust.c = +saved.c || 0; } catch (e) { /* defaults */ }
+const adjust = { b: 0, c: 0, s: 0 };
+try { const saved = JSON.parse(localStorage.getItem("colorcode-adjust") || "{}"); adjust.b = +saved.b || 0; adjust.c = +saved.c || 0; adjust.s = +saved.s || 0; } catch (e) { /* defaults */ }
 // Each slider runs -100 to +100 and doubles or halves at the ends; 0 leaves the picture alone.
 const adjustFactors = () => [Math.pow(2, adjust.b / 100), Math.pow(2, adjust.c / 100)];
-const adjustOn = () => adjust.b !== 0 || adjust.c !== 0;
+const adjustOn = () => adjust.b !== 0 || adjust.c !== 0 || adjust.s !== 0;
 // Most computer browsers can apply a filter while drawing, which costs almost nothing.
 // Where that is missing (older Safari), the same adjustment is done on the pixels afterwards.
 const canvasFilter = (() => {
@@ -1590,35 +1841,50 @@ function applyAdjust(imageData) {
   const a = imageData.data, t = adjustTable;
   for (let i = 0; i < a.length; i += 4) { a[i] = t[a[i]]; a[i + 1] = t[a[i + 1]]; a[i + 2] = t[a[i + 2]]; }
 }
-/* Draw src into a canvas at w x h with the current brightness and contrast. */
+/* Sharpness: above 0 each pixel is pushed away from its four neighbours (edges stand out more,
+   up to 1.5x at +100); below 0 it is blended toward them (softer, merging laser dots). */
+function applySharp(d, w, h, amount) {
+  const a = d.data, src = new Uint8ClampedArray(a), k = Math.abs(amount) / 100, W4 = w * 4;
+  for (let y = 1; y < h - 1; y++) {
+    let i = (y * w + 1) * 4;
+    for (let x = 1; x < w - 1; x++, i += 4) for (let ch = 0; ch < 3; ch++) {
+      const j = i + ch, v = src[j], n = src[j - 4] + src[j + 4] + src[j - W4] + src[j + W4];
+      a[j] = amount > 0 ? v + 1.5 * k * (v - n / 4) : v + k * ((v + n) / 5 - v);
+    }
+  }
+}
+/* Draw src into a canvas at w x h with the current brightness, contrast and sharpness. */
 function drawAdjusted(c2d, src, w, h) {
-  if (!adjustOn()) { c2d.drawImage(src, 0, 0, w, h); return; }
-  if (canvasFilter) {
+  const bc = adjust.b !== 0 || adjust.c !== 0;
+  if (bc && canvasFilter) {
     const [B, C] = adjustFactors();
     c2d.filter = "brightness(" + B.toFixed(4) + ") contrast(" + C.toFixed(4) + ")";
     c2d.drawImage(src, 0, 0, w, h);
     c2d.filter = "none";
-    return;
+  } else c2d.drawImage(src, 0, 0, w, h);
+  if ((bc && !canvasFilter) || adjust.s) {
+    const W = c2d.canvas.width, H = c2d.canvas.height, d = c2d.getImageData(0, 0, W, H);
+    if (bc && !canvasFilter) applyAdjust(d);
+    if (adjust.s) applySharp(d, W, H, adjust.s);
+    c2d.putImageData(d, 0, 0);
   }
-  c2d.drawImage(src, 0, 0, w, h);
-  const d = c2d.getImageData(0, 0, c2d.canvas.width, c2d.canvas.height);
-  applyAdjust(d);
-  c2d.putImageData(d, 0, 0);
 }
 function showAdjust() {
-  $("bright").value = adjust.b; $("contrast").value = adjust.c;
+  $("bright").value = adjust.b; $("contrast").value = adjust.c; $("sharp").value = adjust.s;
+  $("sharp-val").textContent = (adjust.s > 0 ? "+" : "") + adjust.s;
   $("bright-val").textContent = (adjust.b > 0 ? "+" : "") + adjust.b;
   $("contrast-val").textContent = (adjust.c > 0 ? "+" : "") + adjust.c;
 }
 function adjustChanged() {
-  adjust.b = +$("bright").value; adjust.c = +$("contrast").value;
+  adjust.b = +$("bright").value; adjust.c = +$("contrast").value; adjust.s = +$("sharp").value;
   showAdjust();
   try { localStorage.setItem("colorcode-adjust", JSON.stringify(adjust)); } catch (e) { /* not saved */ }
   if (typeof plateAdjustChanged === "function") plateAdjustChanged();
 }
 $("bright").addEventListener("input", adjustChanged);
 $("contrast").addEventListener("input", adjustChanged);
-$("btn-adjust-reset").onclick = () => { $("bright").value = 0; $("contrast").value = 0; adjustChanged(); };
+$("sharp").addEventListener("input", adjustChanged);
+$("btn-adjust-reset").onclick = () => { $("bright").value = 0; $("contrast").value = 0; $("sharp").value = 0; adjustChanged(); };
 showAdjust();
 
 /* ---- camera's own settings: focus and exposure, where the camera and browser allow it ----
@@ -1633,6 +1899,37 @@ async function camApply(c) {
 const camSettings = () => { try { return camTrack.getSettings(); } catch (e) { return {}; } };
 const hasFocus = () => !!(camCaps.focusDistance && camCaps.focusMode && camCaps.focusMode.includes("manual"));
 const hasExpo = () => !!(camCaps.exposureTime && camCaps.exposureMode && camCaps.exposureMode.includes("manual"));
+/* What Auto tune may change, and the focus range it searches (100 to 150 suits the Razer Kiyo over a
+   rack); kept on this device. The focus slider covers the same range. */
+const TUNE_BOXES = ["tune-focus", "tune-expo", "tune-csharp", "tune-bright", "tune-contrast", "tune-sharp"];
+try {
+  const t = JSON.parse(localStorage.getItem("colorcode-tune") || "{}");
+  for (const id of TUNE_BOXES) if (typeof t[id] === "boolean") $(id).checked = t[id];
+  if (t.lo !== undefined) $("focus-lo").value = t.lo;
+  if (t.hi !== undefined) $("focus-hi").value = t.hi;
+} catch (e) { /* defaults */ }
+function saveTuneChoices() {
+  const t = { lo: +$("focus-lo").value, hi: +$("focus-hi").value };
+  for (const id of TUNE_BOXES) t[id] = $(id).checked;
+  try { localStorage.setItem("colorcode-tune", JSON.stringify(t)); } catch (e) { /* not saved */ }
+}
+for (const id of TUNE_BOXES) $(id).addEventListener("change", saveTuneChoices);
+/* The focus range in use: the typed range, kept inside what the camera allows. If the two do not
+   overlap (a camera with a 0 to 1 scale, say), the camera's whole range. */
+function focusRange() {
+  const c = camCaps.focusDistance;
+  let lo = +$("focus-lo").value, hi = +$("focus-hi").value;
+  if (!(hi > lo)) [lo, hi] = [Math.min(lo, hi), Math.max(lo, hi)];
+  const a = Math.max(c.min, lo), b = Math.min(c.max, hi);
+  return b > a ? { lo: a, hi: b, own: true } : { lo: c.min, hi: c.max, own: false };
+}
+function applyFocusRange() {
+  if (!camCaps.focusDistance) return;
+  const r = focusRange(), c = camCaps.focusDistance;
+  $("focus").min = r.lo; $("focus").max = r.hi; $("focus").step = c.step > 0 ? c.step : (r.hi - r.lo) / 100;
+}
+for (const id of ["focus-lo", "focus-hi"]) $(id).addEventListener("change", () => { saveTuneChoices(); applyFocusRange(); });
+const hasCamSharp = () => !!(camCaps.sharpness && camCaps.sharpness.max > camCaps.sharpness.min);
 // exposure slider 0..100 runs along a logarithmic scale between the camera's limits
 function expoFromSlider(v) {
   const { min, max } = camCaps.exposureTime, lo = Math.max(min, max / 4096, 1e-6);
@@ -1650,6 +1947,7 @@ function showCamSettings() {
     $("focus-auto").checked = s.focusMode === "continuous";
     if (s.focusDistance !== undefined) { $("focus").value = s.focusDistance; $("focus-val").textContent = fmt(s.focusDistance); }
   }
+  if (hasCamSharp() && s.sharpness !== undefined) { $("csharp").value = s.sharpness; $("csharp-val").textContent = fmt(s.sharpness); }
   if (hasExpo()) {
     $("expo-auto").checked = s.exposureMode === "continuous";
     if (s.exposureTime !== undefined) { $("expo").value = sliderFromExpo(s.exposureTime); $("expo-val").textContent = fmt(s.exposureTime); }
@@ -1663,11 +1961,13 @@ async function setupCameraControls(track) {
   $("camctl").style.display = camTrack ? "" : "none";
   document.querySelectorAll("#camctl .fo").forEach(e => e.style.display = f ? "" : "none");
   document.querySelectorAll("#camctl .ex").forEach(e => e.style.display = x ? "" : "none");
+  document.querySelectorAll("#camctl .cs").forEach(e => e.style.display = hasCamSharp() ? "" : "none");
+  if (hasCamSharp()) { const c = camCaps.sharpness; $("csharp").min = c.min; $("csharp").max = c.max; $("csharp").step = c.step > 0 ? c.step : 1; }
   $("camctl-none").style.display = "none";
   $("tune-msg").textContent = "";
   if (!camTrack) return;
-  if (f) { const c = camCaps.focusDistance; $("focus").min = c.min; $("focus").max = c.max; $("focus").step = c.step > 0 ? c.step : (c.max - c.min) / 100; }
-  if (!f && !x) $("tune-msg").textContent = "This camera, or this browser, does not let the page set focus or exposure. Tuning will still adjust brightness and contrast and check the lighting. For camera settings use Chrome or Edge on Windows.";
+  if (f) applyFocusRange();
+  if (!f && !x) $("tune-msg").textContent = "This camera, or this browser, does not let the page set focus or exposure. Tuning will still adjust brightness and contrast and check the lighting. Use Chrome or Edge on Windows, with Razer Synapse closed; or lock the focus in OBS (Video Capture Device, Configure Video, Camera Control tab, untick Auto for Focus) before opening this page.";
   // a camera that takes bigger stills than its video (the Kiyo: 2688 x 1520 against 1920 x 1080)
   photoCap = null;
   try {
@@ -1692,6 +1992,7 @@ async function setupCameraControls(track) {
 $("focus-auto").onchange = async () => { await camApply($("focus-auto").checked ? { focusMode: "continuous" } : { focusMode: "manual", focusDistance: +$("focus").value }); showCamSettings(); };
 $("expo-auto").onchange = async () => { await camApply($("expo-auto").checked ? { exposureMode: "continuous" } : { exposureMode: "manual", exposureTime: snap(expoFromSlider(+$("expo").value), camCaps.exposureTime) }); showCamSettings(); };
 $("focus").oninput = () => { $("focus-auto").checked = false; $("focus-val").textContent = fmt(+$("focus").value); camApply({ focusMode: "manual", focusDistance: +$("focus").value }); };
+$("csharp").oninput = () => { $("csharp-val").textContent = fmt(+$("csharp").value); camApply({ sharpness: +$("csharp").value }); };
 $("expo").oninput = () => { $("expo-auto").checked = false; const v = snap(expoFromSlider(+$("expo").value), camCaps.exposureTime); $("expo-val").textContent = fmt(v); camApply({ exposureMode: "manual", exposureTime: v }); };
 
 /* One frame from the camera at its full video size, with brightness and contrast applied. */
@@ -1731,16 +2032,72 @@ function lightLevel(img) {
 }
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 /* Score one camera setting: how many codes can be read, then (as a tie-break) sharpness or exposure. */
+/* Codes readable in a picture: the plain decoder plus the clean-up pass for laser-etched codes. */
+async function codeTexts(img) {
+  const plain = await rawMatrixCodes(img, 255);
+  return new Set(plain.concat(await etchedCodes(img, plain)).map(c => c.text));
+}
+async function countCodes(img) { return (await codeTexts(img)).size; }
 async function scoreFrame(kind) {
   await sleep(kind === "focus" ? 500 : 350);          // let the lens move or the exposure settle
   const img = grabFrame();
-  const codes = (await rawMatrixCodes(img, 255)).length;
+  const codes = await countCodes(img);
   const light = lightLevel(img);
   const tie = kind === "focus" ? sharpness(img) : -Math.abs(light.top - 215) - 400 * light.clipped;      // whites bright but not blown out
   return { codes, tie, light };
 }
 const better = (a, b) => !b || a.codes > b.codes || (a.codes === b.codes && a.tie > b.tie);
-/* Find the focus and exposure that let the most codes be read, check the light, and decide
+/* Find the brightness, contrast and sharpness that read the most codes in one picture (a canvas
+   or bitmap). Scored the way a plate is read: the plain decoder plus the clean-up pass for
+   laser-etched codes. Brightness and contrast on a coarse 5 x 5 grid, then sharpness from -60 to
+   +100 at the best of those, then brightness and contrast again in smaller steps until nothing
+   improves. Ties go to the setting the plain decoder reads best, then to the smaller change.
+   Returns {b, c, s, total, plain, tried}. */
+const tuneWhich = () => ({ b: $("tune-bright").checked, c: $("tune-contrast").checked, s: $("tune-sharp").checked });
+async function bestAdjust(src, say, which) {
+  which = which || { b: true, c: true, s: true };
+  const keep = { b: adjust.b, c: adjust.c, s: adjust.s }, seen = new Map();
+  const tmp = document.createElement("canvas");
+  tmp.width = src.width; tmp.height = src.height;
+  const tx = tmp.getContext("2d", { willReadFrequently: true });
+  let best = null;
+  const clamp = v => Math.max(-100, Math.min(100, Math.round(v)));
+  const size = r => Math.abs(r.b) + Math.abs(r.c) + Math.abs(r.s);
+  const score = async (b, c, sh) => {
+    // a setting left out of Auto tune stays where it is
+    if (!which.b) b = keep.b; if (!which.c) c = keep.c; if (!which.s) sh = keep.s;
+    b = clamp(b); c = clamp(c); sh = clamp(sh);
+    const key = b + "," + c + "," + sh;
+    if (seen.has(key)) return seen.get(key);
+    adjust.b = b; adjust.c = c; adjust.s = sh;
+    tx.clearRect(0, 0, tmp.width, tmp.height);
+    drawAdjusted(tx, src, tmp.width, tmp.height);
+    const img = tx.getImageData(0, 0, tmp.width, tmp.height);
+    const plain = await rawMatrixCodes(img, 255), etched = await etchedCodes(img, plain);
+    const texts = new Set(plain.concat(etched).map(c => c.text));
+    const r = { b, c, s: sh, total: texts.size, plain: plain.length };
+    seen.set(key, r);
+    if (!best || r.total > best.total || (r.total === best.total && (r.plain > best.plain || (r.plain === best.plain && size(r) < size(best))))) best = r;
+    if (say) say("Brightness " + b + ", contrast " + c + ", sharpness " + sh + ": " + r.total + " codes read (best so far " + best.total + " at " + best.b + ", " + best.c + ", " + best.s + ")");
+    return r;
+  };
+  try {
+    await score(keep.b, keep.c, keep.s);
+    if (which.b || which.c) for (const b of [-60, -30, 0, 30, 60]) for (const c of [-30, 0, 30, 60, 90]) await score(b, c, 0);
+    { const at = best; for (const sh of [-60, -30, 30, 60, 100]) await score(at.b, at.c, sh); }
+    for (const step of [15, 8, 4]) {
+      for (let moved = true, k = 0; moved && k < 6; k++) {
+        moved = false;
+        const at = best;
+        for (const [db, dc] of [[step, 0], [-step, 0], [0, step], [0, -step], [step, step], [-step, -step], [step, -step], [-step, step]]) await score(at.b + db, at.c + dc, at.s);
+        if (step === 8) for (const ds of [-15, 15]) await score(at.b, at.c, at.s + ds);
+        if (best !== at) moved = true;
+      }
+    }
+  } finally { adjust.b = keep.b; adjust.c = keep.c; adjust.s = keep.s; }
+  return { ...best, tried: seen.size };
+}
+/* Find the focus, exposure, brightness and contrast that let the most codes be read, check the light, and decide
    whether full-resolution photos read better than video frames. */
 async function autoTune() {
   if (tuning || !stream || !video.videoWidth) return;
@@ -1750,12 +2107,12 @@ async function autoTune() {
   const say = t => { msg.textContent = t; };
   try {
     const start = await scoreFrame("exposure");
-    let note = [];
-    if (hasFocus()) {
-      const c = camCaps.focusDistance, n = 9, tried = [];
+    let note = [], focusAtEnd = false;
+    if (hasFocus() && $("tune-focus").checked) {
+      const c = camCaps.focusDistance, fr = focusRange(), n = 9, tried = [];
       let best = null;
       const tryFocus = async v => {
-        v = snap(v, c);
+        v = snap(Math.max(fr.lo, Math.min(fr.hi, v)), c);
         if (tried.some(t => Math.abs(t - v) < 1e-9)) return;
         tried.push(v);
         await camApply({ focusMode: "manual", focusDistance: v });
@@ -1764,15 +2121,17 @@ async function autoTune() {
         say("Focus " + fmt(v) + ": " + r.codes + " codes read" + (best ? " (best so far " + best.codes + ")" : ""));
         if (better(r, best)) best = { ...r, v };
       };
-      for (let i = 0; i < n; i++) await tryFocus(c.min + (c.max - c.min) * i / (n - 1));
-      const gap = (c.max - c.min) / (n - 1);                       // then look between the best and its neighbors
+      for (let i = 0; i < n; i++) await tryFocus(fr.lo + (fr.hi - fr.lo) * i / (n - 1));
+      const gap = (fr.hi - fr.lo) / (n - 1);                       // then look between the best and its neighbors
       const b0 = best.v;
       for (const d of [-gap / 2, gap / 2, -gap / 4, gap / 4]) await tryFocus(b0 + d);
       await camApply({ focusMode: "manual", focusDistance: best.v });
       $("focus").value = best.v; $("focus-val").textContent = fmt(best.v);
-      note.push("focus " + fmt(best.v));
+      note.push("focus " + fmt(best.v) + " (searched " + fmt(fr.lo) + " to " + fmt(fr.hi) + ")");
+      // sharpest at the very end of the range searched
+      if (best.v <= fr.lo + (fr.hi - fr.lo) * 0.06 || best.v >= fr.hi - (fr.hi - fr.lo) * 0.06) focusAtEnd = fr.own ? "range" : "lens";
     }
-    if (hasExpo()) {
+    if (hasExpo() && $("tune-expo").checked) {
       let best = null;
       for (const v of [10, 25, 40, 55, 70, 85, 100]) {
         const e = snap(expoFromSlider(v), camCaps.exposureTime);
@@ -1786,25 +2145,38 @@ async function autoTune() {
       $("expo").value = best.v; $("expo-val").textContent = fmt(best.e);
       note.push("exposure " + fmt(best.e));
     }
-    // software contrast, on one frame at the chosen settings
+    // the camera's own sharpness, where it has one: a sweep across its range, ties to its starting value
+    if (hasCamSharp() && $("tune-csharp").checked) {
+      const c = camCaps.sharpness, startV = camSettings().sharpness !== undefined ? camSettings().sharpness : (c.min + c.max) / 2;
+      let best = null;
+      for (let i = 0; i < 5; i++) {
+        const v = snap(c.min + (c.max - c.min) * i / 4, c);
+        await camApply({ sharpness: v });
+        $("csharp").value = v; $("csharp-val").textContent = fmt(v);
+        const r = await scoreFrame("exposure");
+        r.tie = -Math.abs(v - startV);
+        say("Camera sharpness " + fmt(v) + ": " + r.codes + " codes read" + (best ? " (best so far " + best.codes + ")" : ""));
+        if (better(r, best)) best = { ...r, v };
+      }
+      await camApply({ sharpness: best.v });
+      $("csharp").value = best.v; $("csharp-val").textContent = fmt(best.v);
+      note.push("camera sharpness " + fmt(best.v));
+    }
+    // software brightness, contrast and sharpness, searched on one frame at the chosen camera settings
     await sleep(400);
     const frameCanvas = document.createElement("canvas");
-    frameCanvas.width = video.videoWidth; frameCanvas.height = video.videoHeight;
-    frameCanvas.getContext("2d").drawImage(video, 0, 0);
-    const keep = { b: adjust.b, c: adjust.c };
-    let bestAdj = null;
-    for (const [b, c] of [[keep.b, keep.c], [0, 0], [0, 40], [-25, 40], [25, 40], [0, 80]]) {
-      adjust.b = b; adjust.c = c;
-      const g = frameCanvas.getContext("2d", { willReadFrequently: true }), tmp = document.createElement("canvas");
-      tmp.width = frameCanvas.width; tmp.height = frameCanvas.height;
-      const tx = tmp.getContext("2d", { willReadFrequently: true });
-      drawAdjusted(tx, frameCanvas, tmp.width, tmp.height);
-      const codes = (await rawMatrixCodes(tx.getImageData(0, 0, tmp.width, tmp.height), 255)).length;
-      say("Brightness " + b + ", contrast " + c + ": " + codes + " codes read");
-      if (!bestAdj || codes > bestAdj.codes) bestAdj = { b, c, codes };
-    }
-    adjust.b = bestAdj.b; adjust.c = bestAdj.c; showAdjust();
+    const was = { b: adjust.b, c: adjust.c, s: adjust.s };
+    adjust.b = 0; adjust.c = 0; adjust.s = 0;
+    const raw = grabFrame();                         // the frame as the camera gives it
+    adjust.b = was.b; adjust.c = was.c; adjust.s = was.s;
+    frameCanvas.width = raw.width; frameCanvas.height = raw.height;
+    frameCanvas.getContext("2d").putImageData(raw, 0, 0);
+    const bestAdj = await bestAdjust(frameCanvas, say, tuneWhich());
+    adjust.b = bestAdj.b; adjust.c = bestAdj.c; adjust.s = bestAdj.s; showAdjust();
     try { localStorage.setItem("colorcode-adjust", JSON.stringify(adjust)); } catch (e) { /* not saved */ }
+    const w = tuneWhich(), fixed = ["brightness", "contrast", "sharpness"].filter((n, i) => ![w.b, w.c, w.s][i]);
+    note.push("brightness " + signed(adjust.b) + ", contrast " + signed(adjust.c) + ", sharpness " + signed(adjust.s) +
+              (fixed.length ? " (" + fixed.join(" and ") + " left as set)" : "") + " from " + bestAdj.tried + " settings tried");
     const end = await scoreFrame("exposure");
     // full-resolution still, where the camera offers one
     let usePhoto = false;
@@ -1816,7 +2188,7 @@ async function autoTune() {
         pc.width = bmp.width; pc.height = bmp.height;
         const px = pc.getContext("2d", { willReadFrequently: true });
         drawAdjusted(px, bmp, pc.width, pc.height);
-        const n = (await rawMatrixCodes(px.getImageData(0, 0, pc.width, pc.height), 255)).length;
+        const n = await countCodes(px.getImageData(0, 0, pc.width, pc.height));
         usePhoto = n > end.codes;
         note.push("photo " + n + " codes against " + end.codes + " from video");
       } catch (e) { note.push("full-resolution photo not available"); }
@@ -1828,8 +2200,22 @@ async function autoTune() {
     let light = "Lighting looks fine.";
     if (L.clipped > 0.03) light = "Glare: " + Math.round(L.clipped * 100) + "% of the picture is blown out to white. Turn the ring light down (anticlockwise) a step or two, or tilt the rack slightly, then tune again.";
     else if (L.top < 120) light = "The picture is dark. Turn the ring light up (clockwise) a step or two, then tune again.";
-    say("Done: " + end.codes + " codes readable (was " + start.codes + ")" + (note.length ? "; " + note.join(", ") : "") +
-        "; brightness " + adjust.b + ", contrast " + adjust.c + ". " + light);
+    const reach = focusAtEnd === "range" ? " The sharpest focus was at the edge of the focus range (" + $("focus-lo").value + " to " + $("focus-hi").value + "); widen the range and tune again in case it is sharper outside it."
+      : focusAtEnd ? " The sharpest focus was at the end of the camera's range, so the rack is probably closer than the lens can focus. Move the camera farther from the rack (the rack can fill less of the picture), then tune again." : "";
+    // record these as the ideal settings for the rack type in view
+    let saved = "";
+    const chosen = $("rack-type").value !== "auto" ? typeById($("rack-type").value) : null;
+    const det = chosen ? { type: chosen } : detectRackType([...(await codeTexts(grabFrame()))]);
+    if (det) {
+      const t = det.type;
+      t.brightness = adjust.b; t.contrast = adjust.c; t.sharpness = adjust.s; t.camera = t.camera || {};
+      t.camera[camKey()] = { focus: hasFocus() ? +$("focus").value : undefined, exposure: hasExpo() ? snap(expoFromSlider(+$("expo").value), camCaps.exposureTime) : undefined,
+                             sharpness: hasCamSharp() ? +$("csharp").value : undefined, photo: usePhoto };
+      t.tuned = new Date().toISOString().slice(0, 10) + ", Auto tune (" + end.codes + " codes)";
+      saveRackSettings(); plateType = t; plateTypeWhy = chosen ? "chosen" : "seen by Auto tune"; showTypeMsg();
+      saved = " Saved as the ideal settings for " + t.name + ".";
+    } else saved = " The rack type could not be told from the codes in view, so these settings were not saved to a rack type (choose the type above and tune again to save them).";
+    say("Done: " + end.codes + " codes readable (was " + start.codes + "). Set: " + note.join("; ") + ". " + light + reach + saved);
   } catch (e) {
     say("Tuning stopped: " + (e && e.message ? e.message : e));
   } finally {
@@ -2086,10 +2472,19 @@ function tick() {
   ctx.restore();
   if (plate) { drawPlateGuide(ctx, w, h); requestAnimationFrame(tick); return; }      // plate mode: preview only, nothing is read until Capture
   if (++frameNo % 2 === 0) {
-    lastScan = scanFrame(ctx.getImageData(0, 0, w, h), track, 110);
-    lastScanAt = performance.now();
-    handle(lastScan);
-    if (frameNo % 6 === 0) lookForMatrix(w, h);
+    const frame = ctx.getImageData(0, 0, w, h);
+    // no color rings in view (checked every 10th frame): skip the ring search and read matrix codes every time
+    if (liveRings === null || frameNo % 10 === 0) liveRings = colorRingsPresent(frame).rings;
+    if (liveRings) {
+      lastScan = scanFrame(frame, track, 110);
+      lastScanAt = performance.now();
+      handle(lastScan);
+      if (frameNo % 6 === 0) lookForMatrix(w, h);
+    } else {
+      lastScan = null; track = null;
+      if (performance.now() - shownAt > 1200) setPill("status", "No color rings in view: reading matrix codes", "idle");
+      lookForMatrix(w, h);
+    }
   }
   drawOverlay();
   requestAnimationFrame(tick);
@@ -2184,6 +2579,285 @@ document.addEventListener("keydown", e => {
   e.preventDefault(); captureFromCamera();
 });
 let lastPlateSource = null;
+/* ---- a matrix code that would not read: try it again turned 10°, 20° … 80° ----
+   The decoder already tries quarter turns itself, so 80° covers every angle. The patch is enlarged
+   2x when the code is small, which also helps. If turning alone does not do it, the patch is made
+   sharper and softer in steps (+1, -1, +2, -2, +3, -3), each tried straight and turned again.
+   Returns a code in photo coordinates, or null. */
+const ROT_ANGLES = [10, 20, 30, 40, 50, 60, 70, 80];
+const SHARP_STEPS = [1, -1, 2, -2, 3, -3];
+/* Blur a grey-level array (w x w) with a Gaussian of the given sigma, in place of a copy. */
+function gaussGrey(src, w, h, sigma) {
+  const r = Math.max(1, Math.ceil(sigma * 2.5)), k = [];
+  let ks = 0;
+  for (let i = -r; i <= r; i++) { const v = Math.exp(-i * i / (2 * sigma * sigma)); k.push(v); ks += v; }
+  for (let i = 0; i < k.length; i++) k[i] /= ks;
+  const tmp = new Float32Array(w * h), out = new Float32Array(w * h);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    let s = 0;
+    for (let i = -r; i <= r; i++) s += k[i + r] * src[y * w + Math.min(w - 1, Math.max(0, x + i))];
+    tmp[y * w + x] = s;
+  }
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    let s = 0;
+    for (let i = -r; i <= r; i++) s += k[i + r] * tmp[Math.min(h - 1, Math.max(0, y + i)) * w + x];
+    out[y * w + x] = s;
+  }
+  return out;
+}
+/* Sharper (step > 0: unsharp mask, stronger each step) or softer (step < 0: blur, wider each step). */
+function sharpenPatch(data, w, h, step) {
+  const out = new ImageData(w, h);
+  for (let ch = 0; ch < 3; ch++) {
+    const g = new Float32Array(w * h);
+    for (let i = 0; i < w * h; i++) g[i] = data.data[i * 4 + ch];
+    const blur = gaussGrey(g, w, h, step > 0 ? 1.2 : 0.45 * -step);
+    for (let i = 0; i < w * h; i++) out.data[i * 4 + ch] = step > 0 ? g[i] + 0.7 * step * (g[i] - blur[i]) : blur[i];
+  }
+  for (let i = 0; i < w * h; i++) out.data[i * 4 + 3] = 255;
+  return out;
+}
+async function rotateRetry(img, tg, withSharpness) {
+  const half = Math.round(tg.pitch * 0.62), size = 2 * half;
+  const x0 = Math.round(tg.x) - half, y0 = Math.round(tg.y) - half;
+  if (x0 < 0 || y0 < 0 || x0 + size > img.width || y0 + size > img.height) return null;
+  const crop = new ImageData(size, size);
+  let sum = 0, sum2 = 0;
+  for (let r = 0; r < size; r++) {
+    const row = img.data.subarray(((y0 + r) * img.width + x0) * 4, ((y0 + r) * img.width + x0 + size) * 4);
+    crop.data.set(row, r * size * 4);
+    for (let i = 0; i < row.length; i += 4) { const v = row[i + 1]; sum += v; sum2 += v * v; }
+  }
+  const n = size * size, mean = sum / n;
+  if (Math.sqrt(Math.max(0, sum2 / n - mean * mean)) < 18) return null;          // nothing in this well
+  const s = size < 260 ? 2 : 1, W = Math.ceil(size * s * 1.42), out = document.createElement("canvas");
+  out.width = out.height = W;
+  const o = out.getContext("2d", { willReadFrequently: true }), grey = Math.round(mean);
+  const src = document.createElement("canvas");
+  src.width = src.height = size;
+  const sx = src.getContext("2d");
+  const attempt = async (patch, angles, sharp) => {
+    sx.putImageData(patch, 0, 0);
+    for (const deg of angles) {
+      const th = deg * Math.PI / 180;
+      o.setTransform(1, 0, 0, 1, 0, 0);
+      o.fillStyle = "rgb(" + grey + "," + grey + "," + grey + ")"; o.fillRect(0, 0, W, W);
+      o.translate(W / 2, W / 2); o.rotate(th); o.scale(s, s);
+      o.drawImage(src, -half, -half);
+      const found = combineQuadCodes(await rawMatrixCodes(o.getImageData(0, 0, W, W), 8)).filter(c => !c.partial && c.corners);
+      let best = null;
+      for (const c of found) { const dd = Math.hypot(c.cx - W / 2, c.cy - W / 2); if (dd < half * s * 0.6 && (!best || dd < best.dd)) best = { c, dd }; }
+      if (!best) continue;
+      const cs = Math.cos(th), sn = Math.sin(th);
+      const back = q => { const vx = (q[0] - W / 2) / s, vy = (q[1] - W / 2) / s; return [tg.x + cs * vx + sn * vy, tg.y - sn * vx + cs * vy]; };
+      const corners = best.c.corners.map(back);
+      return { text: best.c.text, format: best.c.format, corners, cx: corners.reduce((a, p) => a + p[0], 0) / 4, cy: corners.reduce((a, p) => a + p[1], 0) / 4, retryAngle: deg, retrySharp: sharp };
+    }
+    return null;
+  };
+  let got = await attempt(crop, ROT_ANGLES, 0);
+  if (got || !withSharpness) return got;
+  for (const step of SHARP_STEPS) {
+    got = await attempt(sharpenPatch(crop, size, size, step), [0, ...ROT_ANGLES], step);
+    if (got) return got;
+  }
+  return null;
+}
+/* ---- rack types (LVL, Matrix, ...): settings file ----
+   The built-in copy comes from rack_settings.json when the page is built. On the site, a newer
+   rack_settings.json next to index.html is used instead, and changes made on this device (Auto tune,
+   Save to rack type, Load settings file) are kept on this device until Go back to the site's file. */
+const RACK_FILE_BUILTIN = {"about": "Colorcode Reader rack types. The reader works out the rack type from the tube and rack IDs it reads, then uses that type's settings. Edit here, or press Download settings file in the reader and put the file next to index.html. A type with \"labels\": \"colorcode\" is used when most tubes are read from color rings; its tubeId pattern is only a fallback. \"noRackBarcode\": true means no rack barcode is looked for.", "saved": "2026-11-19", "types": [{"id": "lvl", "name": "LVL rack", "tubeId": "^LV\\d{10}$", "rackId": "^LVL\\d+$", "brightness": -83, "contrast": 100, "sharpness": 60, "rackBarcode": "Beside A1, about half a well outside the first column, level with the gap between rows A and B.", "rackStretch": [1, 1.3], "rackReach": 1.8, "camera": {}, "tuned": "2026-11-19 from Roy's Kiyo and phone photos (87 of 94 and 94 of 94 tubes)"}, {"id": "matrix", "name": "Matrix rack", "tubeId": "^\\d{10}$", "rackId": "^[A-Z]{2}\\d{8}$", "brightness": 0, "contrast": 60, "sharpness": 0, "rackBarcode": "On the small tab one well past A1 along the long side. It faces sideways, so a camera above sees it squashed; it is stretched back before reading.", "rackStretch": [1, 1.25, 1.4, 1.6], "rackReach": 1.8, "camera": {}, "tuned": "2026-11-19 from Roy's phone photo (95 of 96 tubes, rack TS01317893)"}, {"id": "colorcode", "name": "Colorcode rack", "labels": "colorcode", "tubeId": "^[0-9A-Z]{1,12}$", "rackId": "", "brightness": 0, "contrast": 0, "sharpness": 0, "noRackBarcode": true, "rackBarcode": "None. Type the rack ID. A1 comes from the way the labels point, with the Bottom view box deciding left or right.", "camera": {}, "tuned": "not tuned yet: run Auto tune with a Colorcode rack in view"}]};
+const RACK_STORE = "colorcode-racktypes";
+const copyOf = o => JSON.parse(JSON.stringify(o));
+let rackSettings = (() => {
+  try { const s = JSON.parse(localStorage.getItem(RACK_STORE) || "null"); if (s && Array.isArray(s.types)) return s; } catch (e) { /* none saved */ }
+  return copyOf(RACK_FILE_BUILTIN);
+})();
+let siteRackFile = null, plateType = null, plateTypeWhy = "";
+function saveRackSettings() {
+  rackSettings.saved = new Date().toISOString().slice(0, 10);
+  try { localStorage.setItem(RACK_STORE, JSON.stringify(rackSettings)); } catch (e) { /* not saved */ }
+  showRackTypes();
+}
+if (/^https?:/.test(location.protocol)) {
+  fetch("rack_settings.json", { cache: "no-cache" }).then(r => r.ok ? r.json() : null).then(j => {
+    if (!j || !Array.isArray(j.types)) return;
+    siteRackFile = j;
+    if (!localStorage.getItem(RACK_STORE)) { rackSettings = copyOf(j); showRackTypes(); }
+  }).catch(() => { /* offline: the built-in or saved copy stays */ });
+}
+const typeById = id => rackSettings.types.find(t => t.id === id) || null;
+const patternOf = p => { try { return p ? new RegExp(p) : null; } catch (e) { return null; } };
+/* The rack type from the IDs that were read: the type whose tube-ID pattern fits most of them,
+   with a rack ID that fits counting extra. Needs at least 3 tubes, or a rack ID, and the type must
+   fit a good share of what was read. Returns {type, tubes, racks} or null. */
+function detectRackType(texts, rings) {
+  // tubes read from color rings: a Colorcode rack, whatever the IDs look like
+  const cc = rackSettings.types.find(t => t.labels === "colorcode");
+  if (cc && rings >= 3 && rings >= 0.5 * texts.length) return { type: cc, score: rings, tubes: rings, racks: 0, rings: true };
+  let best = null;
+  for (const t of rackSettings.types) {
+    if (t.labels === "colorcode") continue;          // its ID pattern fits almost anything: only a last resort
+    const tp = patternOf(t.tubeId), rp = patternOf(t.rackId);
+    const tubes = tp ? texts.filter(x => tp.test(x)).length : 0, racks = rp ? texts.filter(x => rp.test(x)).length : 0;
+    const score = tubes + 5 * racks;
+    if (score > 0 && (!best || score > best.score)) best = { type: t, score, tubes, racks };
+  }
+  if (!best || (!best.racks && (best.tubes < 3 || best.tubes < 0.4 * texts.length))) {
+    const tp = cc && patternOf(cc.tubeId), n = tp ? texts.filter(x => tp.test(x)).length : 0;
+    return cc && n >= 3 && n >= 0.6 * texts.length ? { type: cc, score: n, tubes: n, racks: 0 } : null;
+  }
+  return best;
+}
+/* Make a rack type the one in use: its brightness and contrast now, its camera settings for the next capture. */
+async function useRackType(t, why) {
+  plateType = t; plateTypeWhy = why || "";
+  if (!t) { showTypeMsg(); return false; }
+  let changed = false;
+  const tS = typeof t.sharpness === "number" ? t.sharpness : 0;
+  if (typeof t.brightness === "number" && typeof t.contrast === "number" && (t.brightness !== adjust.b || t.contrast !== adjust.c || tS !== adjust.s)) {
+    adjust.b = t.brightness; adjust.c = t.contrast; adjust.s = tS; showAdjust(); changed = true;
+    try { localStorage.setItem("colorcode-adjust", JSON.stringify(adjust)); } catch (e) { /* not saved */ }
+  }
+  if (typeof t.bottomView === "boolean") $("bottom-view").checked = t.bottomView;
+  const cam = t.camera && t.camera[camKey()];
+  if (cam && camTrack && !tuning) {
+    if (hasFocus() && typeof cam.focus === "number") { await camApply({ focusMode: "manual", focusDistance: cam.focus }); }
+    if (hasExpo() && typeof cam.exposure === "number") { await camApply({ exposureMode: "manual", exposureTime: cam.exposure }); }
+    if (hasCamSharp() && typeof cam.sharpness === "number") { await camApply({ sharpness: cam.sharpness }); }
+    if (photoCap && typeof cam.photo === "boolean") $("use-photo").checked = cam.photo;
+    showCamSettings();
+  }
+  showTypeMsg();
+  return changed;
+}
+const signed = v => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v);
+function showTypeMsg() {
+  const t = plateType;
+  $("type-msg").textContent = !t ? ($("rack-type").value === "auto" ? "The rack type is worked out from the tube and rack IDs in each photo." : "")
+    : t.name + (plateTypeWhy ? " (" + plateTypeWhy + ")" : "") + ": brightness " + signed(t.brightness) + ", contrast " + signed(t.contrast) + ", sharpness " + signed(t.sharpness || 0) +
+      (t.camera && t.camera[camKey()] ? ", with this camera's saved focus and exposure" : "") + ".";
+}
+function showRackTypes() {
+  const sel = $("rack-type"), keep = sel.value || localStorage.getItem("colorcode-racktype-choice") || "auto";
+  sel.innerHTML = '<option value="auto">Work it out from the barcodes</option>' +
+    rackSettings.types.map(t => '<option value="' + t.id + '">' + t.name.replace(/</g, "&lt;") + '</option>').join("");
+  sel.value = [...sel.options].some(o => o.value === keep) ? keep : "auto";
+  const esc = x => String(x == null ? "" : x).replace(/[&<]/g, c => c === "&" ? "&amp;" : "&lt;");
+  $("type-rows").innerHTML = rackSettings.types.map(t => {
+    const cams = Object.keys(t.camera || {}).map(k => k.replace(/^colorcode-cam-/, "")).join(", ");
+    return "<tr><td>" + esc(t.name) + "</td><td><code>" + esc(t.tubeId) + "</code></td><td>" + (t.noRackBarcode ? "none" : "<code>" + esc(t.rackId) + "</code>") + "</td><td>" + esc(signed(t.brightness)) +
+           "</td><td>" + esc(signed(t.contrast)) + "</td><td>" + esc(signed(t.sharpness || 0)) + "</td><td>" + esc(cams || "—") + "</td><td>" + esc(t.tuned || "") + "</td></tr>";
+  }).join("");
+  if (plateType) plateType = typeById(plateType.id);
+  showTypeMsg();
+}
+$("rack-type").onchange = () => {
+  const v = $("rack-type").value;
+  try { localStorage.setItem("colorcode-racktype-choice", v); } catch (e) { /* not saved */ }
+  useRackType(v === "auto" ? null : typeById(v), v === "auto" ? "" : "chosen");
+  if (typeof plateAdjustChanged === "function") plateAdjustChanged();
+};
+$("btn-type-save").onclick = () => {
+  const t = $("rack-type").value !== "auto" ? typeById($("rack-type").value) : plateType;
+  if (!t) { $("type-file-msg").textContent = "Choose a rack type first (or read a photo so the type is known)."; return; }
+  t.brightness = adjust.b; t.contrast = adjust.c; t.sharpness = adjust.s; t.tuned = new Date().toISOString().slice(0, 10) + ", saved by hand";
+  saveRackSettings();
+  $("type-file-msg").textContent = "Saved brightness " + signed(adjust.b) + ", contrast " + signed(adjust.c) + " and sharpness " + signed(adjust.s) + " to " + t.name + ".";
+};
+$("btn-type-download").onclick = () => {
+  const out = copyOf(rackSettings); out.saved = new Date().toISOString().slice(0, 10);
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(out, null, 2) + "\n"], { type: "application/json" }));
+  a.download = "rack_settings.json"; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  $("type-file-msg").textContent = "Saved rack_settings.json. Upload it next to index.html in colorcode2 so every device starts with these settings.";
+};
+$("type-load").addEventListener("change", async ev => {
+  const f = ev.target.files && ev.target.files[0]; ev.target.value = "";
+  if (!f) return;
+  try {
+    const j = JSON.parse(await f.text());
+    if (!j || !Array.isArray(j.types) || !j.types.every(t => t.id && t.name)) throw new Error("it has no list of rack types");
+    rackSettings = j; saveRackSettings();
+    $("type-file-msg").textContent = "Loaded " + j.types.length + " rack types from " + f.name + ".";
+  } catch (e) { $("type-file-msg").textContent = "Could not use that file: " + (e.message || e); }
+});
+$("btn-type-reset").onclick = () => {
+  try { localStorage.removeItem(RACK_STORE); } catch (e) { /* nothing saved */ }
+  rackSettings = copyOf(siteRackFile || RACK_FILE_BUILTIN); showRackTypes();
+  $("type-file-msg").textContent = "Using the " + (siteRackFile ? "site's" : "built-in") + " settings file again.";
+};
+showRackTypes();
+if ($("rack-type").value !== "auto") useRackType(typeById($("rack-type").value), "chosen");
+
+/* Look just outside each corner of the 8 x 12 grid for the rack's own barcode. Some racks (Matrix)
+   print it on a tab that faces sideways, so a camera above sees it squashed; each spot is also read
+   stretched back along the direction it faces (the rack type's rackStretch). Returns a candidate or null. */
+async function findRackAtCorners(img) {
+  const g = plateGrid, geo = gridGeometry(g);
+  if (!geo || g.cells.length < 4) return null;
+  const P = geo.pitch, long = g.cols >= g.rows, R = long ? 8 : 12, C = long ? 12 : 8;
+  const stretches = (plateType && Array.isArray(plateType.rackStretch) && plateType.rackStretch.length) ? plateType.rackStretch : [1, 1.3, 1.6];
+  const tubeP = plateType ? patternOf(plateType.tubeId) : null;
+  const tubes = new Set(plateList.filter(n => n.read).map(n => n.digits));
+  // corners of the grid that was found, and of a full plate if some rows or columns are empty
+  const lows = (n, full) => [...new Set([0, n - full].filter(v => v <= 0))], highs = (n, full) => [...new Set([n - 1, full - 1].filter(v => v >= n - 1))];
+  const corners = [];
+  for (const r of lows(g.rows, R)) for (const c of lows(g.cols, C)) corners.push([r, c, -1, -1]);
+  for (const r of lows(g.rows, R)) for (const c of highs(g.cols, C)) corners.push([r, c, -1, 1]);
+  for (const r of highs(g.rows, R)) for (const c of lows(g.cols, C)) corners.push([r, c, 1, -1]);
+  for (const r of highs(g.rows, R)) for (const c of highs(g.cols, C)) corners.push([r, c, 1, 1]);
+  // a window about half a well each way, enlarged to roughly 330 and 420 pixels: small rack codes read best like that
+  const half = Math.round(P * 0.52), size = 2 * half, scales = [330 / size, 420 / size].map(v => Math.min(5, Math.max(1, v)));
+  const src = document.createElement("canvas"); src.width = src.height = size;
+  const sx = src.getContext("2d");
+  const out = document.createElement("canvas");
+  const o = out.getContext("2d", { willReadFrequently: true });
+  for (const [r, c, sr, sc] of corners) {
+    const unit = (dr, dc) => { const a = geo.at(r, c), b = geo.at(r + dr, c + dc), n = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1; return [(b[0] - a[0]) / n, (b[1] - a[1]) / n]; };
+    // past the corner along the columns, past it along the rows, and the LVL spot: half a well outside, level with the next row
+    const spots = [[0, sc * 1.05, unit(0, 1)], [sr * 1.05, 0, unit(1, 0)], [sr * 1.35, 0, unit(1, 0)], [0, sc * 1.35, unit(0, 1)], [-sr * 0.5, sc * 0.65, null], [sr * 0.65, -sc * 0.5, null]];
+    for (const [dr, dc, axis] of spots) {
+      const [px, py] = geo.at(r + dr, c + dc);
+      if (px < 0 || py < 0 || px >= img.width || py >= img.height) continue;
+      if (rackCands.some(k => Math.hypot(k.cx - px, k.cy - py) < P * 0.5)) continue;
+      const x0 = Math.round(px) - half, y0 = Math.round(py) - half, crop = new ImageData(size, size);
+      let sum = 0;
+      for (let yy = 0; yy < size; yy++) for (let xx = 0; xx < size; xx++) {
+        const X = Math.min(img.width - 1, Math.max(0, x0 + xx)), Y = Math.min(img.height - 1, Math.max(0, y0 + yy)), i = (Y * img.width + X) * 4, j = (yy * size + xx) * 4;
+        crop.data[j] = img.data[i]; crop.data[j + 1] = img.data[i + 1]; crop.data[j + 2] = img.data[i + 2]; crop.data[j + 3] = 255; sum += img.data[i + 1];
+      }
+      sx.putImageData(crop, 0, 0);
+      const grey = Math.round(sum / (size * size));
+      for (const s of scales) for (const st of axis ? stretches : [1]) {
+        const W = Math.ceil(size * s * 1.75);
+        if (out.width !== W) { out.width = out.height = W; }
+        const [ux, uy] = axis || [1, 0], k = st - 1;
+        o.setTransform(1, 0, 0, 1, 0, 0); o.fillStyle = "rgb(" + grey + "," + grey + "," + grey + ")"; o.fillRect(0, 0, W, W);
+        o.setTransform(s * (1 + k * ux * ux), s * k * ux * uy, s * k * ux * uy, s * (1 + k * uy * uy), W / 2, W / 2);
+        o.drawImage(src, -half, -half);
+        o.setTransform(1, 0, 0, 1, 0, 0);
+        const pic = o.getImageData(0, 0, W, W);
+        // as it is, then with the contrast stretched (the tab is often in shadow)
+        const stretched = new ImageData(W, W);
+        { const hist = new Uint32Array(256); for (let i = 1; i < pic.data.length; i += 4) hist[pic.data[i]]++;
+          let lo = 0, hi = 255, a = 0; const n = W * W;
+          while (lo < 255 && (a += hist[lo]) < n * 0.02) lo++;
+          a = 0; while (hi > 0 && (a += hist[hi]) < n * 0.02) hi--;
+          const f = 255 / Math.max(1, hi - lo);
+          for (let i = 0; i < pic.data.length; i += 4) { for (let ch = 0; ch < 3; ch++) stretched.data[i + ch] = (pic.data[i + ch] - lo) * f; stretched.data[i + 3] = 255; } }
+        for (const im of [pic, stretched]) {
+          const found = await rawMatrixCodes(im, 3, ["DataMatrix", ...RACK_FORMATS]);
+          const hit = found.find(q => Math.hypot(q.cx - W / 2, q.cy - W / 2) < half * s * 0.9 && !tubes.has(q.text) && !(tubeP && tubeP.test(q.text)));
+          if (hit) return { text: hit.text, format: hit.format === "DataMatrix" ? "DataMatrix" : hit.format, cx: px, cy: py, corner: true, stretch: st };
+        }
+      }
+    }
+  }
+  return null;
+}
 /* ---- rack ID ---- */
 let rackCands = [], rack = null, dirFromRack = false, turnLocked = false;
 /* Take codes that cannot be tubes out of the grid, and pick the rack barcode: the candidate closest
@@ -2236,28 +2910,48 @@ function findRackLabel(img) {
   }
   return false;
 }
+/* The rack barcode sits beside A1, so it settles the whole layout: A1 is the corner next to it, the
+   12 columns run along the long side and the 8 rows along the short side. That leaves one answer
+   whichever way round the rack was put down, top or bottom view. Unless Turn plate was pressed,
+   it overrules the way the labels point and the bottom-view setting. */
 function pickRack() {
   rack = null;
+  // a rack type without a rack barcode: codes outside the wells are never taken for one
+  if (plateType && plateType.noRackBarcode) { dirFromRack = false; plateShift = null; return; }
   if (!rackCands.length || !plateGrid.cells.length) { dirFromRack = false; return; }
-  const turns = turnLocked ? [plateTurn] : plateGrid.upKnown ? [plateGrid.turn] : [0, 1, 2, 3];
+  const options = [];
+  if (turnLocked) options.push([plateTurn, plateMirror !== null ? plateMirror : $("bottom-view").checked]);
+  else for (const tn of [0, 1, 2, 3]) for (const m of [false, true]) options.push([tn, m]);
+  // a code that fits the rack type's rack-ID pattern beats any other code outside the wells
+  const rp = plateType ? patternOf(plateType.rackId) : null, fits = rp ? rackCands.filter(c => rp.test(c.text)) : [];
+  const cands = fits.length ? fits : rackCands, reach = (plateType && plateType.rackReach) || 1.8;
   let best = null;
-  for (const tn of turns) {
-    const g = tn === plateGrid.turn ? plateGrid : gridOf(tn);
+  for (const [tn, m] of options) {
+    const g = gridOf(tn, m, true);
     if (g.rows > 8 || g.cols > 12) continue;
     const geo = gridGeometry(g);
     if (!geo) continue;
-    const a1 = geo.at(0, 0);
-    for (const c of rackCands) {
-      const d = Math.hypot(c.cx - a1[0], c.cy - a1[1]) / geo.pitch;
-      // prefer a plate the long way round (12 across) when distances are close
-      const score = d + (g.cols >= g.rows ? 0 : 0.5);
-      if (!best || score < best.score) best = { score, d, tn, c, g };
+    // A1 is the corner nearest the rack barcode. If whole rows or columns next to it are empty, the
+    // grid that was found starts further in, so A1 may lie up to 8 - rows rows and 12 - cols columns out.
+    for (let dr = 0; dr <= 8 - g.rows; dr++) for (let dc = 0; dc <= 12 - g.cols; dc++) {
+      const a1 = geo.at(-dr, -dc);
+      for (const c of cands) {
+        const d = Math.hypot(c.cx - a1[0], c.cy - a1[1]) / geo.pitch;
+        const score = d + (g.cols >= g.rows ? 0 : 1) + 0.15 * (dr + dc);     // a rack is 12 across and 8 down; no shift if it fits as well
+        if (!best || score < best.score - 1e-6) best = { score, d, tn, m, c, dr, dc };
+      }
     }
   }
-  if (!best || best.d > 3) { dirFromRack = false; return; }      // nothing close enough to A1 to be its barcode
+  if (!best || best.d > reach) { dirFromRack = false; plateShift = null; return; }      // nothing close enough to A1 to be its barcode
   rack = best.c;
-  if (!turnLocked && !plateGrid.upKnown && best.g !== plateGrid) { plateGrid = best.g; plateTurn = best.tn; }
-  dirFromRack = !turnLocked && !plateGrid.upKnown;
+  if (!turnLocked) {
+    const labelsSaid = plateGrid.upKnown ? plateGrid.turn : null;
+    plateShift = { turn: best.tn, mirror: best.m, dr: best.dr, dc: best.dc };
+    plateTurn = best.tn; plateMirror = best.m;
+    plateGrid = gridOf(best.tn, best.m);
+    plateGrid.overruled = labelsSaid !== null && labelsSaid !== best.tn;
+  }
+  dirFromRack = !turnLocked;
 }
 function showRack() {
   const box = $("rack-id"), src = $("rack-src");
@@ -2265,25 +2959,76 @@ function showRack() {
   const others = rackCands.length - (rack ? 1 : 0);
   src.textContent = box.dataset.typed === "1" ? "Typed in." :
     rack ? "Read from the " + rack.format + (/label/.test(rack.format) ? "" : " barcode") + " beside A1." + (others ? " " + others + " other code" + (others === 1 ? "" : "s") + " outside the wells ignored." : "")
+         : plateType && plateType.noRackBarcode ? plateType.name + "s have no rack barcode. Type the rack ID."
          : rackCands.length ? "A code was found outside the wells, but not beside A1. Type the rack ID." : "No rack barcode found beside A1. Type the rack ID.";
 }
 $("rack-id").addEventListener("input", () => { $("rack-id").dataset.typed = $("rack-id").value ? "1" : ""; $("rack-src").textContent = "Typed in."; });
 function plateAdjustChanged() { $("btn-reread").style.display = lastPlateSource && !plateBusy ? "" : "none"; }
+/* Auto tune on the last plate photo (for a phone, where the page cannot set the camera): finds the
+   brightness, contrast and sharpness that read the most codes, saves them to the rack type, reads again. */
+$("btn-photo-tune").onclick = async () => {
+  if (!lastPlateSource || plateBusy) return;
+  const btn = $("btn-photo-tune"), status = $("plate-status");
+  btn.disabled = true; plateBusy = true;
+  const wellsRead = () => plateGrid && plateGrid.cells.length ? plateTable().list.filter(w => w.number).length : 0;
+  const before = wellsRead(), was = { b: adjust.b, c: adjust.c, s: adjust.s };
+  try {
+    const raw = await loadPhoto(lastPlateSource, { raw: true }), cv = document.createElement("canvas");
+    cv.width = raw.width; cv.height = raw.height; cv.getContext("2d").putImageData(raw, 0, 0);
+    const r = await bestAdjust(cv, t => { status.textContent = "Tuning on this photo (takes a minute or two): " + t; }, tuneWhich());
+    adjust.b = r.b; adjust.c = r.c; adjust.s = r.s; showAdjust();
+    try { localStorage.setItem("colorcode-adjust", JSON.stringify(adjust)); } catch (e) { /* not saved */ }
+    const t = $("rack-type").value !== "auto" ? typeById($("rack-type").value) : plateType;
+    const old = t ? { b: t.brightness, c: t.contrast, s: t.sharpness || 0, tuned: t.tuned } : null;
+    if (t) { t.brightness = r.b; t.contrast = r.c; t.sharpness = r.s; }
+    status.textContent = "Trying brightness " + signed(r.b) + ", contrast " + signed(r.c) + ", sharpness " + signed(r.s) + " (" + r.total + " codes in one pass, " + r.tried + " settings tried). Reading the photo again…";
+    plateBusy = false;
+    const keepType = $("rack-type").value;
+    if (t && keepType === "auto") { $("rack-type").value = t.id; }      // read with these exact settings
+    await readPlate(lastPlateSource);
+    // the quick search does not always predict the full read: keep whichever reads more wells
+    const after = wellsRead();
+    let msg;
+    if (after >= before) {
+      if (t) { t.tuned = new Date().toISOString().slice(0, 10) + ", Auto tune on a photo (" + after + " wells)"; saveRackSettings(); }
+      msg = "Auto tune: brightness " + signed(r.b) + ", contrast " + signed(r.c) + ", sharpness " + signed(r.s) + " read " + after + " wells (was " + before + ")" + (t ? "; saved to " + t.name : "") + ".";
+    } else {
+      if (t && old) { t.brightness = old.b; t.contrast = old.c; t.sharpness = old.s; t.tuned = old.tuned; saveRackSettings(); }
+      adjust.b = was.b; adjust.c = was.c; adjust.s = was.s; showAdjust();
+      try { localStorage.setItem("colorcode-adjust", JSON.stringify(adjust)); } catch (e) { /* not saved */ }
+      await readPlate(lastPlateSource);
+      msg = "Auto tune found nothing better: its best guess read " + after + " wells against " + before + ", so the previous settings were kept.";
+    }
+    $("rack-type").value = keepType;
+    $("plate-note").textContent = msg + " " + $("plate-note").textContent;
+  } finally { plateBusy = false; btn.disabled = false; }
+};
 $("btn-reread").onclick = () => { if (lastPlateSource) readPlate(lastPlateSource); };
+$("zoom-rack").onchange = () => { if (plateGrid && plateDims) drawPhoto(); };
 $("mode-live").onclick = () => setMode(false);
 $("mode-plate").onclick = () => setMode(true);
 
 /* The well grid for the current photo; in bottom view the columns count from the right. */
-function gridOf(turn) {
-  const g = assignGrid(plateList, turn);
-  return $("bottom-view").checked ? mirrorColumns(g) : g;
+/* The well grid for the current photo. mirror: count columns from the right, as seen from underneath.
+   Left out, it follows the rack barcode's decision if there is one, else the bottom-view setting. */
+let plateMirror = null, plateShift = null, plateRings = true, plateSplit = false;
+function gridOf(turn, mirror, noShift) {
+  if (mirror === undefined) mirror = plateMirror !== null ? plateMirror : $("bottom-view").checked;
+  const g0 = assignGrid(plateList, turn), g = mirror ? mirrorColumns(g0) : g0;
+  // rows or columns beside A1 that hold no tubes: count the wells from A1 all the same
+  const sh = plateShift;
+  if (!noShift && sh && (sh.dr || sh.dc) && sh.turn === g.turn && sh.mirror === !!mirror) {
+    g.cells = g.cells.map(c => ({ ...c, row: c.row + sh.dr, col: c.col + sh.dc }));
+    g.rows += sh.dr; g.cols += sh.dc; g.shifted = sh;
+  }
+  return g;
 }
 function cellState(c) {
   if (!c) return { cls: "", text: "nothing found", number: "" };
   const o = c.node;
   if (o.fragment) return { cls: "unread", text: "only part of the four-code label could be read", number: "" };
   if (!o.read || !o.trusted) return { cls: "unread", text: "label not readable", number: "" };
-  if (o.matrixOnly) return { cls: "ok", text: "matrix code only (no rings read)", number: o.digits };
+  if (o.matrixOnly) return { cls: "ok", text: "matrix code only (no rings read)" + (o.retrySharp ? ", read " + (o.retrySharp > 0 ? "sharper +" : "softer −") + Math.abs(o.retrySharp) + (o.retryAngle ? " and turned " + o.retryAngle + "°" : "") : o.retryAngle ? ", read turned " + o.retryAngle + "°" : ""), number: o.digits };
   if (o.matrixMismatch) return { cls: "check", text: "rings and matrix disagree: matrix reads " + o.matrixText, number: o.digits };
   const sure = o.goodCopies === 2 || o.matrix >= 0.9;
   const how = (o.goodCopies === 2 ? "both rings agree" : o.goodCopies === 1 ? "one clean ring" : "pieced together from both rings") +
@@ -2302,26 +3047,98 @@ function plateTable() {
   }
   return { list: out, rows, cols };
 }
+/* Which quarter-turn and flip of the photo puts A1 at the top left with columns running right and
+   rows running down. Returns the 2 x 2 matrix [a, c, b, d] (x' = a x + c y, y' = b x + d y). */
+function photoTurn() {
+  const geo = plateGrid && plateGrid.cells.length ? gridGeometry(plateGrid) : null;
+  if (!geo) return [1, 0, 0, 1];
+  const o = geo.at(0, 0), p = geo.at(0, 1), q = geo.at(1, 0);
+  const col = [p[0] - o[0], p[1] - o[1]], row = [q[0] - o[0], q[1] - o[1]];
+  let best = null;
+  for (const [a, c, b, d] of [[1, 0, 0, 1], [0, -1, 1, 0], [-1, 0, 0, -1], [0, 1, -1, 0], [-1, 0, 0, 1], [1, 0, 0, -1], [0, 1, 1, 0], [0, -1, -1, 0]]) {
+    // column direction should come out pointing right, row direction pointing down
+    const s = (a * col[0] + c * col[1]) / Math.hypot(...col) + (b * row[0] + d * row[1]) / Math.hypot(...row);
+    if (!best || s > best.s) best = { s, m: [a, c, b, d] };
+  }
+  return best.m;
+}
+let photoBase = null;
+/* The photo on screen, turned so A1 is at the top left. With Zoom in on the rack (the default) it is
+   cut down to the rack: the 8 x 12 wells and the rack barcode, with the well grid drawn over it,
+   row letters and column numbers outside it, and a box round the rack barcode. */
 function drawPhoto() {
-  const cv = $("photo"), x = cv.getContext("2d"), k = plateDims.k;
-  x.putImageData(plateDims.shown, 0, 0);
-  for (const c of plateGrid.cells) {
-    const st = cellState(c), o = c.node, r = labelSize(o) * k;
+  const cv = $("photo"), x = cv.getContext("2d"), k = plateDims.k, src = plateDims.shown;
+  photoBase = photoBase || document.createElement("canvas");
+  if (photoBase.width !== src.width || photoBase.height !== src.height || photoBase.dataset.v !== String(plateDims.v)) {
+    photoBase.width = src.width; photoBase.height = src.height; photoBase.dataset.v = String(plateDims.v);
+    photoBase.getContext("2d").putImageData(src, 0, 0);
+  }
+  const [a, c, b, d] = photoTurn(), T = (px, py) => [a * px + c * py, b * px + d * py];
+  const geo = plateGrid && plateGrid.cells.length >= 3 ? gridGeometry(plateGrid) : null;
+  const R = Math.max(8, plateGrid.rows), C = Math.max(12, plateGrid.cols), P = geo ? geo.pitch : 0;
+  const W0 = src.width / k, H0 = src.height / k;
+  const whole = [[0, 0], [W0, 0], [0, H0], [W0, H0]].map(p => T(p[0], p[1]));
+  const box = pts => { const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]); return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]; };
+  const [wx0, wy0, wx1, wy1] = box(whole);
+  let [x0, y0, x1, y1] = [wx0, wy0, wx1, wy1];
+  const zoom = $("zoom-rack").checked && geo;
+  if (zoom) {
+    const pts = [[-0.5, -0.5], [-0.5, C - 0.5], [R - 0.5, -0.5], [R - 0.5, C - 0.5]].map(([r, cc]) => geo.at(r, cc));
+    if (rack) pts.push([rack.cx, rack.cy]);
+    [x0, y0, x1, y1] = box(pts.map(p => T(p[0], p[1])));
+    const m = P * 0.95;                                  // room for the row letters, column numbers and the rack box
+    // the margin may run past the photo's edge (a rack that fills the photo): that part is left dark
+    x0 = Math.max(wx0 - m, x0 - m); y0 = Math.max(wy0 - m, y0 - m); x1 = Math.min(wx1 + m, x1 + m); y1 = Math.min(wy1 + m, y1 + m);
+  }
+  // screen pixels per photo pixel: up to 2200 across, never more than 2.5x the screen copy
+  const sc = Math.min(2200 / Math.max(x1 - x0, y1 - y0), k * 2.5);
+  cv.width = Math.round((x1 - x0) * sc); cv.height = Math.round((y1 - y0) * sc);
+  const at = (px, py) => { const [u, v] = T(px, py); return [(u - x0) * sc, (v - y0) * sc]; };      // photo point -> screen
+  x.fillStyle = "#0b0f14"; x.fillRect(0, 0, cv.width, cv.height);
+  x.setTransform(a * sc / k, b * sc / k, c * sc / k, d * sc / k, -x0 * sc, -y0 * sc);
+  x.imageSmoothingQuality = "high";
+  x.drawImage(photoBase, 0, 0);
+  x.setTransform(1, 0, 0, 1, 0, 0);
+  const font = px => "700 " + Math.max(9, Math.round(px)) + "px -apple-system, system-ui, sans-serif";
+  const label = (text, sx, sy, px, fill) => {
+    x.font = font(px); x.textAlign = "center"; x.textBaseline = "middle";
+    x.lineWidth = Math.max(2, px * 0.22); x.strokeStyle = "rgba(0,0,0,.85)"; x.fillStyle = fill;
+    const half = x.measureText(text).width / 2 + 3;
+    sx = Math.min(cv.width - half, Math.max(half, sx));        // keep the whole label on screen
+    x.strokeText(text, sx, sy); x.fillText(text, sx, sy);
+  };
+  if (geo) {
+    // the 8 x 12 grid: lines halfway between wells, A to H down the side, 1 to 12 along the top
+    const line = (p, q) => { const [ax, ay] = at(p[0], p[1]), [bx, by] = at(q[0], q[1]); x.beginPath(); x.moveTo(ax, ay); x.lineTo(bx, by); x.stroke(); };
+    x.lineWidth = Math.max(1.5, P * sc * 0.022); x.strokeStyle = "rgba(255,214,0,.9)";
+    for (let r = 0; r <= R; r++) line(geo.at(r - 0.5, -0.5), geo.at(r - 0.5, C - 0.5));
+    for (let cc = 0; cc <= C; cc++) line(geo.at(-0.5, cc - 0.5), geo.at(R - 0.5, cc - 0.5));
+    const lp = P * sc * 0.3;
+    // a row letter goes on the right instead where the rack barcode sits in its place on the left
+    const nearRack = p => rack && Math.hypot(p[0] - rack.cx, p[1] - rack.cy) < P * 0.6;
+    for (let r = 0; r < R; r++) {
+      const left = geo.at(r, -0.78), [sx, sy] = at(...(nearRack(left) ? geo.at(r, C - 0.22) : left));
+      label(String.fromCharCode(65 + r), sx, sy, lp, "#ffd600");
+    }
+    for (let cc = 0; cc < C; cc++) { const [sx, sy] = at(...geo.at(-0.78, cc)); label(String(cc + 1), sx, sy, lp, "#ffd600"); }
+  }
+  for (const cell of plateGrid.cells) {
+    const st = cellState(cell), o = cell.node, r = (geo ? P * 0.36 : labelSize(o)) * sc, [sx, sy] = at(o.cx, o.cy);
     x.lineWidth = Math.max(2, r * 0.1);
     x.strokeStyle = st.cls === "ok" ? "#35d06a" : st.cls === "check" ? "#ffb020" : "#ff6b60";
-    x.beginPath(); x.arc(o.cx * k, o.cy * k, r * 1.05, 0, 2 * Math.PI); x.stroke();
-    x.font = "700 " + Math.max(9, Math.round(r * 0.62)) + "px -apple-system, system-ui, sans-serif";
-    x.textAlign = "center"; x.textBaseline = "middle";
-    x.lineWidth = Math.max(2, r * 0.16); x.strokeStyle = "rgba(0,0,0,.85)"; x.fillStyle = "#fff";
-    x.strokeText(c.well, o.cx * k, o.cy * k); x.fillText(c.well, o.cx * k, o.cy * k);
+    x.beginPath(); x.arc(sx, sy, r * 1.05, 0, 2 * Math.PI); x.stroke();
+    label(cell.well, sx, sy, r * 0.62, "#fff");
   }
   if (rack) {
-    const geo = gridGeometry(plateGrid), r = (geo ? geo.pitch * 0.45 : 30) * k;
-    x.lineWidth = Math.max(3, r * 0.12); x.strokeStyle = "#3fd0e0";
-    x.strokeRect(rack.cx * k - r, rack.cy * k - r, 2 * r, 2 * r);
-    x.font = "700 " + Math.max(10, Math.round(r * 0.5)) + "px -apple-system, system-ui, sans-serif";
-    x.textAlign = "center"; x.textBaseline = "middle"; x.lineWidth = 4; x.strokeStyle = "rgba(0,0,0,.85)"; x.fillStyle = "#3fd0e0";
-    x.strokeText("RACK", rack.cx * k, rack.cy * k); x.fillText("RACK", rack.cx * k, rack.cy * k);
+    // a box round the rack barcode: its own corners when the decoder gave them, else half a well square
+    let pts = rack.corners && rack.corners.length === 4 ? rack.corners.map(p => at(p[0], p[1])) : null;
+    if (!pts) { const h = (P ? P * 0.3 : 30); pts = [[-h, -h], [h, -h], [h, h], [-h, h]].map(([u, v]) => at(rack.cx + u, rack.cy + v)); }
+    const cx = pts.reduce((t, p) => t + p[0], 0) / 4, cy = pts.reduce((t, p) => t + p[1], 0) / 4;
+    const grow = 1.25, poly = pts.map(p => [cx + (p[0] - cx) * grow, cy + (p[1] - cy) * grow]);
+    x.lineWidth = Math.max(3, P * sc * 0.04); x.strokeStyle = "#3fd0e0";
+    x.beginPath(); poly.forEach((p, i) => i ? x.lineTo(p[0], p[1]) : x.moveTo(p[0], p[1])); x.closePath(); x.stroke();
+    const top = Math.min(...poly.map(p => p[1])), lp = Math.max(12, (P || 60) * sc * 0.2);
+    label("RACK " + (($("rack-id").value || rack.text) || ""), cx, top - lp * 0.9 > lp ? top - lp * 0.9 : Math.max(...poly.map(p => p[1])) + lp * 0.9, lp, "#3fd0e0");
   }
 }
 function renderPlate() {
@@ -2333,13 +3150,21 @@ function renderPlate() {
   const notes = [];
   if (solo) notes.push(solo + (solo === 1 ? " well was" : " wells were") + " read from the matrix code alone.");
   if (clash) notes.push(clash + (clash === 1 ? " label has" : " labels have") + " rings and a matrix code that give different numbers; check " + (clash === 1 ? "it." : "them."));
+  const turned = g.cells.filter(c => c.node.read && c.node.retryAngle && !c.node.retrySharp).length, sharp = g.cells.filter(c => c.node.read && c.node.retrySharp).length;
+  if (turned) notes.push(turned + (turned === 1 ? " matrix code was" : " matrix codes were") + " read after turning " + (turned === 1 ? "it" : "them") + " in 10° steps.");
+  if (sharp) notes.push(sharp + (sharp === 1 ? " matrix code was" : " matrix codes were") + " read after making " + (sharp === 1 ? "it" : "them") + " sharper or softer.");
   const viaRetry = g.cells.filter(c => c.node.read && c.node.retry).length;
   if (viaRetry) notes.push(viaRetry + (viaRetry === 1 ? " label was" : " labels were") + " read on a brightness retry.");
   if (bad) notes.push(bad + (bad === 1 ? " label was" : " labels were") + " found but could not be read.");
   if (chk) notes.push(chk + (chk === 1 ? " read rests" : " reads rest") + " on one ring with no matrix to confirm; the check code makes a wrong number very unlikely.");
   if (g.rows > 8 || g.cols > 12) notes.push("The labels form a " + g.rows + " by " + g.cols + " grid, which is bigger than a 96 plate. Check the photo.");
-  notes.push((dirFromRack ? "Plate direction taken from the rack barcode beside A1: " : g.upKnown && !turnLocked ? "Plate direction taken from the way the labels point: " : "Plate direction: ") + TURN_TEXT[(g.turn + (g.mirrored ? 1 : 0)) % 4] + (g.mirrored ? " (bottom view)" : "") + ". Use Turn plate if that is wrong.");
-  if (g.rows < 8 || g.cols < 12) notes.push("Only part of a plate was found (" + g.rows + " by " + g.cols + "), so wells are counted from the top-left label that was seen.");
+  if (dirFromRack) notes.push("Layout taken from the rack barcode: A1 is the well beside it" + (g.overruled ? " (the labels point another way; the rack barcode wins)" : "") + ". The picture is turned so A1 is at the top left.");
+  else notes.push((g.upKnown && !turnLocked ? "Plate direction taken from the way the labels point: " : "Plate direction: ") + TURN_TEXT[(g.turn + (g.mirrored ? 1 : 0)) % 4] + (g.mirrored ? " (bottom view)" : "") + ". Use Turn plate if that is wrong.");
+  if (g.shifted) notes.push("The " + (g.shifted.dr ? (g.shifted.dr === 1 ? "first row" : "first " + g.shifted.dr + " rows") : "") + (g.shifted.dr && g.shifted.dc ? " and the " : "") + (g.shifted.dc ? (g.shifted.dc === 1 ? "first column" : "first " + g.shifted.dc + " columns") : "") + " next to the rack barcode had no tubes; wells are still counted from A1 beside the barcode.");
+  else if ((g.rows < 8 || g.cols < 12) && !dirFromRack) notes.push("Only part of a plate was found (" + g.rows + " by " + g.cols + "), so wells are counted from the top-left label that was seen.");
+  if (plateType) notes.unshift(plateType.name + (plateTypeWhy ? " (" + plateTypeWhy + ")" : "") + ".");
+  if (!plateRings) notes.push("No color rings in this photo, so only the matrix codes were read.");
+  if (plateSplit) notes.push("No full-size matrix codes were found, so the split (four-code) labels were read and their halves paired.");
   $("plate-note").textContent = notes.join(" ");
   showRack();
   const map = $("map");
@@ -2348,7 +3173,7 @@ function renderPlate() {
   const add = (tag, text) => { const e = document.createElement(tag); e.textContent = text; map.appendChild(e); return e; };
   add("span", "");
   // in bottom view the map is drawn the way the photo looks: column 1 on the right
-  const flip = !!g.mirrored;
+  const flip = false;                       // the map is always drawn the standard way: A1 top left, 1 to 12 across
   for (let c = 0; c < t.cols; c++) add("span", flip ? t.cols - c : c + 1);
   const rowMajor = t.list.slice().sort((a, b) => a.row - b.row || (flip ? b.col - a.col : a.col - b.col));
   for (const w of rowMajor) {
@@ -2368,7 +3193,9 @@ function renderPlate() {
 }
 /* Load a plate picture (a photo file, or a frame captured from the camera), apply brightness and
    contrast, and return its pixels. Also draws a smaller copy on screen. */
-async function loadPhoto(src) {
+/* opts.raw: the photo as taken, without brightness and contrast, and the screen copy is left alone. */
+async function loadPhoto(src, opts) {
+  const raw = !!(opts && opts.raw);
   let im, iw, ih, url = null;
   if (src instanceof HTMLCanvasElement) { im = src; iw = src.width; ih = src.height; }
   else {
@@ -2385,14 +3212,15 @@ async function loadPhoto(src) {
     const work = document.createElement("canvas");
     work.width = w; work.height = h;
     const wx = work.getContext("2d", { willReadFrequently: true });
-    drawAdjusted(wx, im, w, h);
+    if (raw) wx.drawImage(im, 0, 0, w, h); else drawAdjusted(wx, im, w, h);
     const data = wx.getImageData(0, 0, w, h);
+    if (raw) { work.width = work.height = 1; return data; }
     // smaller copy for the screen
-    const kd = Math.min(1, 1600 / Math.max(w, h)), cv = $("photo");
+    const kd = Math.min(1, 2600 / Math.max(w, h)), cv = $("photo");       // big enough to zoom in on the rack
     cv.width = Math.round(w * kd); cv.height = Math.round(h * kd);
     const cx2 = cv.getContext("2d", { willReadFrequently: true });
     drawAdjusted(cx2, im, cv.width, cv.height);
-    plateDims = { k: kd, shown: cx2.getImageData(0, 0, cv.width, cv.height) };
+    plateDims = { k: kd, shown: cx2.getImageData(0, 0, cv.width, cv.height), v: Date.now() + Math.random() };
     work.width = work.height = 1;       // hand the big canvas back
     return data;
   } finally { if (url) URL.revokeObjectURL(url); }
@@ -2402,24 +3230,50 @@ async function readPlate(file) {
   plateBusy = true; selWell = null; plateTurn = undefined;
   lastPlateSource = file;
   $("btn-reread").style.display = "none";
-  rackCands = []; rack = null; dirFromRack = false; turnLocked = false;
+  rackCands = []; rack = null; dirFromRack = false; turnLocked = false; plateMirror = null; plateShift = null;
   $("rack-id").dataset.typed = ""; $("save-msg").textContent = "";
   const status = $("plate-status");
   $("plate-results").hidden = true; $("plate-results").style.display = "none";
   try {
     status.textContent = "Loading the photo…";
     await pause();
-    const img = await loadPhoto(file);
+    let img = await loadPhoto(file);
     $("photo").hidden = false;
-    // Matrix codes first: they decode quickly and each one marks exactly where a label is.
-    status.textContent = "Reading matrix codes…";
+    // the rack type first (a quick look at the tube codes), so its brightness and contrast are used for the read
+    if ($("rack-type").value === "auto") {
+      status.textContent = "Working out the rack type…";
+      await pause();
+      const quick = await etchedCodes(img, []), det = detectRackType(quick.map(c => c.text));
+      if (await useRackType(det ? det.type : null, det ? "worked out from " + (det.racks ? "the rack ID" : det.tubes + " tube IDs") : "")) {
+        status.textContent = "Loading the photo with the " + det.type.name + " settings…";
+        img = await loadPhoto(file);
+      }
+    } else if (await useRackType(typeById($("rack-type").value), "chosen")) img = await loadPhoto(file);
+    // 1. a quick look for color rings: without them every ring step is skipped
+    status.textContent = "Checking for color rings…";
+    await pause();
+    plateRings = colorRingsPresent(img).rings;
+    plateSplit = false;
+    // 2. matrix codes: they decode quickly and each one marks exactly where a label is
+    status.textContent = plateRings ? "Reading matrix codes…" : "No color rings: reading matrix codes…";
     await new Promise(r => setTimeout(r, 30));
-    const split = splitRackCandidates(await readPlateCodes(img));
+    const found = await readPlateCodes(img);
+    let split = splitRackCandidates(found);
+    // 3. no recognizable full-size tube codes: go straight to split (four-code) labels
+    const fullSize = split.tubes.filter(c => !c.partial && !c.quad).length;
+    if (fullSize < Math.max(3, 0.25 * split.tubes.length)) {
+      status.textContent = "No full-size matrix codes: looking for split (four-code) labels…";
+      await pause();
+      const sp = splitRackCandidates(await splitCodes(img, found.raw));
+      if (sp.tubes.filter(c => !c.partial).length > split.tubes.filter(c => !c.partial).length) { split = sp; plateSplit = true; }
+    }
     const codes = split.tubes;
     rackCands = split.cands;
     let last = performance.now();
     plateList = [];
-    if (codes.filter(c => !c.partial).length >= 12) {
+    if (!plateRings) {
+      mergeMatrixCodes(plateList, codes);      // matrix codes only: no ring reading at all
+    } else if (codes.filter(c => !c.partial).length >= 12) {
       // enough codes to map the plate: read the rings at each code, then look at the empty positions
       const steps = ringsAtCodes(img, plateList, codes);
       for (let i = 0; i < steps.length; i++) {
@@ -2452,9 +3306,38 @@ async function readPlate(file) {
       mergeMatrixCodes(plateList, codes);
     }
     settleGrid();
-    if (!rack) { status.textContent = "Looking for a rack label beside A1…"; await pause(); findRackLabel(img); }
+    if ($("rack-type").value === "auto") {          // again with everything read: color rings show a Colorcode rack
+      const readNodes = plateList.filter(n => n.read), rings = readNodes.filter(n => !n.matrixOnly).length;
+      const det = detectRackType(readNodes.map(n => n.digits).concat(rackCands.map(c => c.text)), rings);
+      if (det && (!plateType || det.type.id !== plateType.id)) {
+        await useRackType(det.type, "worked out from " + (det.rings ? det.tubes + " color-ring labels" : det.racks ? "the rack ID" : det.tubes + " tube IDs") + "; its brightness and contrast apply from the next photo");
+        plateMirror = null; plateGrid = gridOf(plateTurn); pickRack();
+      }
+    }
+    const noBarcode = plateType && plateType.noRackBarcode;
+    if (!rack && !noBarcode) {
+      status.textContent = "Looking for the rack barcode at the corners of the plate…";
+      await pause();
+      // on the photo as taken: the rack barcode is often in shadow, and settings that suit the tubes can bury it
+      const k = await findRackAtCorners(adjustOn() ? await loadPhoto(file, { raw: true }) : img) || (adjustOn() ? await findRackAtCorners(img) : null);
+      if (k) { rackCands.push(k); pickRack(); }
+    }
+    if (!rack && !noBarcode && plateRings) { status.textContent = "Looking for a rack label beside A1…"; await pause(); findRackLabel(img); }
+    if ($("rot-retry").checked) {
+      const targets = retryTargets(plateList, undefined);
+      let got = 0;
+      for (let i = 0; i < targets.length; i++) {
+        status.textContent = "Turning" + ($("sharp-retry").checked ? " and sharpening" : "") + " unread matrix codes: " + (i + 1) + " of " + targets.length + ", " + got + " read";
+        const c = await rotateRetry(img, targets[i], $("sharp-retry").checked);
+        // on a sheet of four-code labels a lone short code is only a quarter: half an ID, not a tube
+        const quarter = c && !c.quad && /^[0-9A-Z]{1,6}$/.test(c.text) && plateList.some(n => n.read && (n.quad || n.quarterMatch));
+        if (c && !quarter && !plateList.some(n => n.read && n.digits === c.text)) { mergeMatrixCodes(plateList, [c]); got++; }
+        else if (!c) await pause();
+      }
+      if (got) settleGrid();
+    }
     // unread labels only: brightness +1, -1, +2, -2 ... up to the limit; a label stops as soon as it reads
-    const maxStep = Math.max(0, Math.min(MAX_BRIGHT_STEP, parseInt($("retries").value, 10) || 0));
+    const maxStep = plateRings ? Math.max(0, Math.min(MAX_BRIGHT_STEP, parseInt($("retries").value, 10) || 0)) : 0;     // ring re-reads: only with rings
     let recovered = 0;
     for (let attempt = 1; attempt <= 2 * maxStep; attempt++) {
       const targets = retryTargets(plateList, undefined);
@@ -2475,6 +3358,7 @@ async function readPlate(file) {
     $("plate-results").hidden = false; $("plate-results").style.display = "contents";
     $("well-detail").textContent = "Tap a well to see its number.";
     renderPlate();
+    $("btn-photo-tune").style.display = "";
     beep();
     if (!rack) $("rack-id").focus();
   } catch (e) {
@@ -2498,7 +3382,7 @@ $("btn-turn").onclick = () => {
 $("order").onchange = renderPlate;
 $("bottom-view").onchange = () => {
   if (!plateList) return;
-  if (dirFromRack) plateTurn = undefined;        // the rack barcode will choose the direction again
+  if (dirFromRack) { plateTurn = undefined; plateMirror = null; }      // the rack barcode will decide again
   plateGrid = gridOf(plateTurn);
   pickRack();
   selWell = null; $("well-detail").textContent = "Tap a well to see its number.";
@@ -2610,7 +3494,7 @@ $("btn-plate-csv").onclick = () => {
   navigator.serviceWorker.register("sw.js").then(function () {
     return navigator.serviceWorker.ready;
   }).then(function () {
-    note.textContent = "Saved on this phone. It will open without a signal. Version 9.";
+    note.textContent = "Saved on this phone. It will open without a signal. Version 20.";
   }).catch(function () {
     note.textContent = "Could not save a copy for offline use; it still works while online.";
   });

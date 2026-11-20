@@ -1,0 +1,56 @@
+{
+  "about": "Colorcode Reader rack types. The reader works out the rack type from the tube and rack IDs it reads, then uses that type's settings. Edit here, or press Download settings file in the reader and put the file next to index.html. A type with \"labels\": \"colorcode\" is used when most tubes are read from color rings; its tubeId pattern is only a fallback. \"noRackBarcode\": true means no rack barcode is looked for.",
+  "saved": "2026-11-19",
+  "types": [
+    {
+      "id": "lvl",
+      "name": "LVL rack",
+      "tubeId": "^LV\\d{10}$",
+      "rackId": "^LVL\\d+$",
+      "brightness": -83,
+      "contrast": 100,
+      "sharpness": 60,
+      "rackBarcode": "Beside A1, about half a well outside the first column, level with the gap between rows A and B.",
+      "rackStretch": [
+        1,
+        1.3
+      ],
+      "rackReach": 1.8,
+      "camera": {},
+      "tuned": "2026-11-19 from Roy's Kiyo and phone photos (87 of 94 and 94 of 94 tubes)"
+    },
+    {
+      "id": "matrix",
+      "name": "Matrix rack",
+      "tubeId": "^\\d{10}$",
+      "rackId": "^[A-Z]{2}\\d{8}$",
+      "brightness": 0,
+      "contrast": 60,
+      "sharpness": 0,
+      "rackBarcode": "On the small tab one well past A1 along the long side. It faces sideways, so a camera above sees it squashed; it is stretched back before reading.",
+      "rackStretch": [
+        1,
+        1.25,
+        1.4,
+        1.6
+      ],
+      "rackReach": 1.8,
+      "camera": {},
+      "tuned": "2026-11-19 from Roy's phone photo (95 of 96 tubes, rack TS01317893)"
+    },
+    {
+      "id": "colorcode",
+      "name": "Colorcode rack",
+      "labels": "colorcode",
+      "tubeId": "^[0-9A-Z]{1,12}$",
+      "rackId": "",
+      "brightness": 0,
+      "contrast": 0,
+      "sharpness": 0,
+      "noRackBarcode": true,
+      "rackBarcode": "None. Type the rack ID. A1 comes from the way the labels point, with the Bottom view box deciding left or right.",
+      "camera": {},
+      "tuned": "not tuned yet: run Auto tune with a Colorcode rack in view"
+    }
+  ]
+}
